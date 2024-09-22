@@ -27,7 +27,13 @@ module.exports = async function (localpath) {
 
     return uploadResult.secure_url;
   } catch (error) {
-    fs.unlink(localpath);
+    fs.unlink(localpath, (err) => {
+      if (err) {
+        console.error(`Error deleting file ${localpath}:`, err);
+      } else {
+        console.log(`File ${localpath} deleted successfully.`);
+      }
+    });
     return null;
   }
 };
