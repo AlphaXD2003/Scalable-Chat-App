@@ -131,6 +131,7 @@ const options = {
   secure: process.env.NODE_ENV === "development" ? false : true,
   httpOnly: true,
   samesite: "None",
+  maxAge: 5 * 24 * 60 * 60 * 1000, // 5 * 24 hours in milliseconds
 };
 
 const generateToken = async (user) => {
@@ -189,7 +190,7 @@ const login = async (req, res) => {
           avatar: user.avatar,
           isVerified: user.isVerified,
           isAdmin: user.isAdmin,
-          emai: user.email,
+          email: user.email,
         })
       );
   } catch (error) {
@@ -273,6 +274,7 @@ const getUserInfo = async (req, res) => {
     if (!user) throw new ApiErrors(401, "User Not found");
     return res.status(201).json(new ApiResponse(201, "User Found", user));
   } catch (error) {
+    console.log(error);
     return res
       .status(error.statusCode || 401)
       .json(
