@@ -149,11 +149,10 @@ const generateToken = async (user) => {
 };
 const login = async (req, res) => {
   try {
-    const { username, email, password } = req.body;
-    if (!username && !email)
-      throw new ApiErrors(401, "Credentials doesnot match");
+    const { uservalue, password } = req.body;
+    if (!uservalue) throw new ApiErrors(401, "Credentials doesnot match");
     const user = await User.findOne({
-      $or: [{ email }, { username }],
+      $or: [{ email: uservalue }, { username: uservalue }],
     });
     if (!user) throw new ApiErrors(401, "Credentials doesnot match");
     if (!user.isVerified) throw new ApiErrors(401, "User is not verified");
@@ -181,7 +180,18 @@ const login = async (req, res) => {
       .status(201)
       .cookie("accessToken", accessToken, options)
       .cookie("refreshToken", refreshToken, options)
-      .json(new ApiResponse(201, "User found", true));
+      .json(
+        new ApiResponse(201, "User found", {
+          username: user.username,
+          firstname: user.firstname,
+          lastname: user.lastname,
+          id: user._id,
+          avatar: user.avatar,
+          isVerified: user.isVerified,
+          isAdmin: user.isAdmin,
+          emai: user.email,
+        })
+      );
   } catch (error) {
     console.log(error);
     return res

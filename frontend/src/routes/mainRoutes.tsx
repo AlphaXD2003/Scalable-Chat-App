@@ -1,6 +1,9 @@
 import App from "@/App";
+import Protected from "@/components/Protected";
+import NotFound from "@/pages/404";
 import LoginPage from "@/pages/LoginPage";
 import RegsiterPage from "@/pages/RegsiterPage";
+import Test from "@/pages/Test";
 
 export interface SingleRoute {
   path: string;
@@ -10,8 +13,8 @@ export interface SingleRoute {
 
 const routes: SingleRoute[] = [
   {
-    path: "/",
-    element: <App />,
+    path: "*",
+    element: <NotFound />,
   },
   {
     path: "/login",
@@ -20,6 +23,20 @@ const routes: SingleRoute[] = [
   {
     path: "/register",
     element: <RegsiterPage />,
+  },
+  {
+    path: "/",
+    element: <Protected />,
+    children: [
+      {
+        path: "",
+        element: <App />,
+      },
+      {
+        path: "test",
+        element: <Test />,
+      },
+    ],
   },
 ];
 
