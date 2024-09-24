@@ -1,5 +1,10 @@
+import axios from "axios";
+import Contacts from "./components/Contacts/Contacts";
+import { useUserContext } from "./context/UserContext";
+import { useEffect, useState } from "react";
+
 function App() {
-  return <div className="text-5xl">Hi</div>;
+  return <Contacts />;
 }
 
 export default App;

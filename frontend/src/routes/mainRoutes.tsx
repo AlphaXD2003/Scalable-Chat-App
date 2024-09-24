@@ -1,5 +1,6 @@
 import App from "@/App";
 import Protected from "@/components/Protected";
+import SocketProvider from "@/context/SocketContext";
 import NotFound from "@/pages/404";
 import LoginPage from "@/pages/LoginPage";
 import RegsiterPage from "@/pages/RegsiterPage";
@@ -26,7 +27,11 @@ const routes: SingleRoute[] = [
   },
   {
     path: "/",
-    element: <Protected />,
+    element: (
+      <SocketProvider>
+        <Protected />
+      </SocketProvider>
+    ),
     children: [
       {
         path: "",

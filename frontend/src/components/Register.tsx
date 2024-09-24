@@ -7,7 +7,7 @@ import { Label } from "@/components/ui/label";
 
 import { cn } from "@/lib/utils";
 import { ChangeEvent } from "react";
-import { Link } from "react-router-dom";
+import { Link, Navigate, useNavigate } from "react-router-dom";
 import axios from "axios";
 interface LoginProps {
   [key: string]: any;
@@ -20,6 +20,7 @@ const Register = ({ ...props }: LoginProps) => {
   const [lastname, setLastName] = useState<string>("");
   const [email, setEmail] = useState<string>("");
   const [file, setFile] = useState<File | null>(null);
+  const navigate = useNavigate();
   const handleFileChange = async (e: ChangeEvent<HTMLInputElement>) => {
     if (e.target.files) {
       const selectedFile = e.target.files[0];
@@ -56,6 +57,9 @@ const Register = ({ ...props }: LoginProps) => {
       toast({
         title: "Successfully registered",
       });
+      setTimeout(() => {
+        navigate("/login");
+      }, 2000);
     } catch (error) {
       toast({
         title: "Error while Registering the file",

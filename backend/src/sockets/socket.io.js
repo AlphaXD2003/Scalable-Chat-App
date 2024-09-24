@@ -12,7 +12,7 @@ class Socket {
     this.groupmessages = { isSubscribed: false };
     this.socketio = new Server(WebServer, {
       cors: {
-        origin: ["*"],
+        origin: ["http://localhost:5173"],
         credentials: true,
       },
     });
@@ -121,7 +121,12 @@ class Socket {
 
       console.log(`New Socket connected: ${socket.id}`);
       const username = socket.handshake.query.username;
-      if (!username) throw new ApiErrors(401, "Socket is not having username");
+      try {
+        if (!username)
+          throw new ApiErrors(401, "Socket is not having username");
+      } catch (error) {
+        return;
+      }
       let userdata = await User.findOne({ username });
       const groups = await GroupInfo.find({ memberId: userdata._id });
       socket.groups = [];

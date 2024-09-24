@@ -9,7 +9,7 @@ import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 import axios from "axios";
 import { useUserContext } from "@/context/UserContext";
-import { Link } from "react-router-dom";
+import { Link, Navigate, useNavigate } from "react-router-dom";
 
 interface LoginProps {
   [key: string]: any;
@@ -20,6 +20,7 @@ const Login = ({ ...props }: LoginProps) => {
 
   const { toast } = useToast();
   const { setUser } = useUserContext();
+  const navigate = useNavigate();
   const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
 
@@ -46,6 +47,9 @@ const Login = ({ ...props }: LoginProps) => {
       toast({
         title: "Successfully Logged in",
       });
+      setTimeout(() => {
+        navigate("/");
+      }, 1500);
     } catch (error) {
       console.log(error);
       toast({

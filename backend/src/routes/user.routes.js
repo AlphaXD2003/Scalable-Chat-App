@@ -8,6 +8,7 @@ const {
   saveContact,
   getAllContactsOfAuser,
   createGroups,
+  getUserDetailsFromEmail,
 } = require("../controllers/user.controller");
 const { authMiddleware } = require("../middlewares/auth.middleware");
 const upload = require("../middlewares/multer.middleware");
@@ -24,6 +25,8 @@ router.route("/verify/:id").post(verify);
 //secure routes
 router.route("/logout").post(authMiddleware, logout);
 router.route("/userinfo").post(authMiddleware, getUserInfo);
+router.route("/emaildetails").post(authMiddleware, getUserDetailsFromEmail);
+
 //contact
 router.route("/save").post(authMiddleware, saveContact);
 router.route("/contact").post(authMiddleware, getAllContactsOfAuser);
