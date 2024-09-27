@@ -1,6 +1,6 @@
 import { useUserContext } from "@/context/UserContext";
 import axios from "axios";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useState, KeyboardEvent } from "react";
 import { Audio } from "react-loader-spinner";
 import {
   MessageSquare,
@@ -13,16 +13,27 @@ import {
   User,
 } from "lucide-react";
 import ChatArea from "./ChatArea";
+import ContactCard from "./ContactCard";
 interface ContactInterface {
   savedEmail: string;
   saversEmail: string;
   __v: number;
   _id: string;
 }
+interface User {
+  avatar: string;
+  email: string;
+  firstname: string;
+  lastname: string;
+  username: string;
+  _id: string;
+}
+
 const Contacts = () => {
   const { user } = useUserContext();
   const [contacts, setContacts] = useState<ContactInterface[] | null>(null);
-  const fetchContacts = useCallback(async () => {
+  const [userDetails, setUserDetails] = useState<User[] | []>([]);
+  const fetchContacts = async () => {
     try {
       const response = await axios.post(
         `${import.meta.env.VITE_BACKEND_URL}/user/contact`,
@@ -34,12 +45,9 @@ const Contacts = () => {
       console.log(response.data.data);
       setContacts(response.data.data);
     } catch (error) {}
-  }, [user, user?.id, contacts, setContacts]);
+  };
 
-  const [inputText, setInputText] = useState("");
-
-  const [selectedContact, setSelectedContact] =
-    useState<ContactInterface | null>(null);
+  const [selectedContact, setSelectedContact] = useState<User | null>(null);
 
   useEffect(() => {
     if (user && user.id) {
@@ -48,6 +56,13 @@ const Contacts = () => {
       })();
     }
   }, [user]);
+
+  useEffect(() => {
+    return () => {
+      setUserDetails([]);
+    };
+  }, []);
+
   if (!contacts) {
     return (
       <>
@@ -56,7 +71,15 @@ const Contacts = () => {
     );
   } else
     return (
-      <div className="flex h-screen bg-gray-900 text-gray-100">
+      <div
+        className="flex  bg-gray-900 text-gray-100"
+        onKeyDown={(e: KeyboardEvent<HTMLDivElement>) => {
+          if (e.key === "Escape") {
+            setSelectedContact(null);
+          }
+        }}
+        tabIndex={5}
+      >
         {/* Contacts List */}
         <div className="w-1/3  bg-gray-800 border-r border-gray-700">
           <div className="bg-gray-900 p-4 flex justify-between items-center ">
@@ -84,20 +107,30 @@ const Contacts = () => {
               <div
                 key={contact._id}
                 className="flex items-center p-4 hover:bg-gray-700 cursor-pointer"
-                onClick={() => setSelectedContact(contact)}
+                onClick={() => {
+                  console.log(contact);
+                  console.log(userDetails);
+                  const selectedUser = userDetails.find(
+                    (user) => user.email === contact.savedEmail
+                  );
+                  console.log(selectedUser);
+                  if (selectedUser) {
+                    setSelectedContact(selectedUser);
+                  }
+                }}
               >
-                <div className="w-12 h-12 bg-gray-300 rounded-full mr-4"></div>
-                <div>
-                  <h3 className="font-semibold">{contact.savedEmail}</h3>
-                  {/* <p className="text-sm text-gray-600">{contact.lastMessage}</p> */}
-                </div>
+                <ContactCard
+                  selectedContact={selectedContact}
+                  setUserDetails={setUserDetails}
+                  contact={contact}
+                />
               </div>
             ))}
           </div>
         </div>
 
         {/* Chat Area */}
-        <ChatArea />
+        {selectedContact ? <ChatArea contact={selectedContact} /> : null}
       </div>
     );
 };

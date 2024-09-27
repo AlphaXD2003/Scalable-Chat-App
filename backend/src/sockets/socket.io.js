@@ -75,6 +75,7 @@ class Socket {
 
           const promises = groupinfo.map(async (group) => {
             const user = await User.findById(group.memberId);
+
             console.log(`User Info of group ${groupname}`);
             console.log(user.username);
             if (!usernameOfTheGroup.includes(user.username)) {
