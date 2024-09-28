@@ -1,10 +1,7 @@
-import axios from "axios";
-import Contacts from "./components/Contacts/Contacts";
-import { useUserContext } from "./context/UserContext";
-import { useEffect, useState } from "react";
+import Home from "./components/chat/Home";
 
 function App() {
-  return <Contacts />;
+  return <Home />;
 }
 
 export default App;

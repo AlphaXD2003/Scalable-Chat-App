@@ -43,6 +43,7 @@ const Login = ({ ...props }: LoginProps) => {
         isAdmin: response.data.data.isAdmin,
         email: response.data.data.email,
         id: response.data.data.id,
+        avatar: response.data.data.avatar,
       });
       toast({
         title: "Successfully Logged in",

@@ -1,7 +1,6 @@
 import {
   createContext,
   ReactNode,
-  useCallback,
   useContext,
   useEffect,
   useState,
@@ -117,29 +116,29 @@ const SocketProvider = ({ children }: { children: ReactNode }) => {
 
       setSocket(socket);
 
-      socket.on("receive_message", receive_message);
+      // socket.on("receive_message", receive_message);
 
-      socket.on("message:offline", offline_message);
+      // socket.on("message:offline", offline_message);
 
-      socket.on("receive_group_message", group_message);
+      // socket.on("receive_group_message", group_message);
 
-      socket.on("groupmessage:offline", offline_group_message);
+      // socket.on("groupmessage:offline", offline_group_message);
 
-      socket.on("error_msg", err_message);
+      // socket.on("error_msg", err_message);
 
       return () => {
         socket.close();
         setSocket(null);
 
-        socket.off("receive_message", receive_message);
+        // socket.off("receive_message", receive_message);
 
-        socket.off("message:offline", offline_message);
+        // socket.off("message:offline", offline_message);
 
-        socket.off("receive_group_message", group_message);
+        // socket.off("receive_group_message", group_message);
 
-        socket.off("groupmessage:offline", offline_group_message);
+        // socket.off("groupmessage:offline", offline_group_message);
 
-        socket.off("error_msg", err_message);
+        // socket.off("error_msg", err_message);
       };
     }
   }, [user]);

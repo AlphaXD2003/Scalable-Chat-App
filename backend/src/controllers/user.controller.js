@@ -366,8 +366,28 @@ const getUserDetailsFromEmail = async (req, res) => {
       );
   }
 };
+const getUserDetailsFromUsername = async (req, res) => {
+  try {
+    const { username } = req.body;
+    if (!username) throw new ApiErrors(401, "Email required to get info");
+    const user = await User.findOne({ username }).select(
+      "-password -refreshToken -isAdmin -isVerified"
+    );
+    return res.status(201).json(new ApiResponse(201, "User Found", user));
+  } catch (error) {
+    return res
+      .status(error.statusCode || 401)
+      .json(
+        new ApiResponse(
+          error.statusCode || 401,
+          error.message || "Error While saving contact"
+        )
+      );
+  }
+};
 
 module.exports = {
+  getUserDetailsFromUsername,
   getUserDetailsFromEmail,
   test,
   signup,

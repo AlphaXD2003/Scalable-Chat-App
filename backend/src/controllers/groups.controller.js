@@ -1,5 +1,6 @@
 const { Group } = require("../models/groups.models");
 const { GroupInfo } = require("../models/groupsInfo.models");
+const User = require("../models/user.models");
 const ApiErrors = require("../utils/ApiError");
 const ApiResponse = require("../utils/ApiResponse");
 const cloudinary = require("../utils/cloudinary");
@@ -246,7 +247,59 @@ const deleteGroup = async (req, res) => {
   }
 };
 
+const fetchGroupsByUsername = async (req, res) => {
+  try {
+    const { username } = req.body;
+    console.log(username);
+    const user = await User.findOne({ username });
+    if (!user) {
+      throw new ApiErrors(401, "Username is not valid.");
+    }
+    const groups = await GroupInfo.find({ memberId: user._id });
+    console.log(groups);
+    const groupData = [];
+    const promise = groups.map(async (group) => {
+      const data = await Group.findOne({ name: group.groupname });
+
+      groupData.push(data);
+    });
+    await Promise.all(promise);
+
+    return res
+      .status(201)
+      .json(new ApiResponse(201, "Groups Found", groupData));
+  } catch (error) {
+    console.log(error);
+    return res
+      .status(error.statusCode || 401)
+      .json(
+        new ApiResponse(
+          error.statusCode || 401,
+          error.message || "Error While saving contact"
+        )
+      );
+  }
+};
+const getGroupDetilsByname = async (req, res) => {
+  try {
+    const { name } = req.body;
+    if (!name) throw new ApiErrors(401, "Group not found");
+    const group = await Group.findOne({ name });
+    return res.status(201).json(new ApiResponse(201, "Group FOund", group));
+  } catch (error) {
+    return res
+      .status(error.statusCode || 401)
+      .json(
+        new ApiResponse(
+          error.statusCode || 401,
+          error.message || "Error While saving contact"
+        )
+      );
+  }
+};
+
 module.exports = {
+  getGroupDetilsByname,
   createGroups,
   addAdmin,
   addMembers,
@@ -254,4 +307,5 @@ module.exports = {
   updateGroup,
   removeAdmin,
   deleteGroup,
+  fetchGroupsByUsername,
 };

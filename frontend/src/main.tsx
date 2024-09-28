@@ -9,11 +9,9 @@ import UserContextProvider from "./context/UserContext.tsx";
 import SocketProvider from "./context/SocketContext.tsx";
 const router = createBrowserRouter(routes);
 createRoot(document.getElementById("root")!).render(
-  <StrictMode>
-    <ThemeProvider>
-      <UserContextProvider>
-        <RouterProvider router={router} />
-      </UserContextProvider>
-    </ThemeProvider>
-  </StrictMode>
+  <ThemeProvider>
+    <UserContextProvider>
+      <RouterProvider router={router} />
+    </UserContextProvider>
+  </ThemeProvider>
 );

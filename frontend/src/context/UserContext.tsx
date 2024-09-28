@@ -15,6 +15,7 @@ export interface UserInterface {
   isAdmin: boolean;
   email: string;
   id: string;
+  avatar: string;
 }
 
 export interface UserContextType {
