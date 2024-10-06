@@ -24,6 +24,7 @@ interface Conversation {
   unreadCount: number;
   avatar: string;
   username?: string;
+  messageId: string;
 }
 
 interface Message {

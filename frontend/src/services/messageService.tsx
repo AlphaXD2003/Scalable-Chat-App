@@ -21,4 +21,18 @@ export const messageService = {
 
     return messages;
   },
+  async deleteMessage(messageId: string | undefined): Promise<boolean> {
+    let response;
+    console.log(messageId);
+    if (messageId) {
+      response = await db.messages.get(messageId);
+      if (response) {
+        response.text = "This Message was deleted";
+        await db.messages.put(response);
+        return true;
+      }
+      return false;
+    }
+    return false;
+  },
 };

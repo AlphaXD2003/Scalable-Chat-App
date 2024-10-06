@@ -10,6 +10,7 @@ class Socket {
   constructor(WebServer) {
     this.messages = { isSubscribed: false };
     this.groupmessages = { isSubscribed: false };
+    this.delete_message = { isSubscribed: false };
     this.socketio = new Server(WebServer, {
       cors: {
         origin: ["http://localhost:5173"],
@@ -37,7 +38,8 @@ class Socket {
               key: `offline:${adata.username}:${adata.uid}`,
               value: JSON.stringify({
                 ...adata,
-                time: Date.now(),
+                time: new Date(),
+                roomType: "private",
               }),
             });
             await produceInKakfa({
@@ -118,6 +120,13 @@ class Socket {
           });
         });
         this.groupmessages.isSubscribed = true;
+      }
+      if (!this.delete_message.isSubscribed) {
+        await redis.subscribeChannel("delete_message", async (data) => {
+          const adata = JSON.parse(data);
+          this.socketio.to(adata.name).emit("delete_msg_online", adata);
+        });
+        this.delete_message.isSubscribed = true;
       }
 
       console.log(`New Socket connected: ${socket.id}`);
@@ -247,7 +256,7 @@ class Socket {
         }
         const message = data.message;
         const sender = socket.username;
-        const uid = uuid();
+        const uid = data.mid;
 
         await redis.publishMessage({
           channel: "messages",
@@ -260,11 +269,18 @@ class Socket {
       });
 
       socket.on("group_message_send", async (data) => {
-        const uid = uuid();
+        const uid = data.mid;
 
         await redis.publishMessage({
           channel: "group_messages",
           message: JSON.stringify({ ...data, uid, sender: socket.username }),
+        });
+      });
+
+      socket.on("delete_message", async (data) => {
+        await redis.publishMessage({
+          channel: "delete_message",
+          message: JSON.stringify({ ...data, timestamp: new Date() }),
         });
       });
 

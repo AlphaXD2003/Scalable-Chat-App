@@ -7,6 +7,7 @@ interface Conversation {
   unreadCount: number;
   avatar: string;
   user?: string;
+  messageId: string;
 }
 
 interface Message {
@@ -17,6 +18,7 @@ interface Message {
   timestamp: Date;
   user?: string;
   avatar?: string;
+  messageId: string;
 }
 
 export const conversationService = {
@@ -33,6 +35,7 @@ export const conversationService = {
     conversationId: string,
     message: Message
   ): Promise<void> {
+    console.log("message", message);
     const conversation = await db.conversations.get(conversationId);
     if (conversation) {
       conversation.lastMessage = message.text;
@@ -47,6 +50,7 @@ export const conversationService = {
         name: message.sender,
         id: message.id,
         lastMessageTimestamp: message.timestamp,
+        messageId: message.messageId,
       });
     }
   },
@@ -57,5 +61,29 @@ export const conversationService = {
       conversation.unreadCount = 0;
       await db.conversations.put(conversation);
     }
+  },
+  async updateLastMessage(
+    conversationId: string,
+    message: string
+  ): Promise<void> {
+    const conversation = await db.conversations.get(conversationId);
+    console.log(conversation);
+    if (conversation) {
+      conversation.lastMessage = message;
+      conversation.lastMessageTimestamp = new Date();
+      await db.conversations.put(conversation);
+    }
+  },
+  async getConversation(cid: string): Promise<Conversation | undefined> {
+    const conversation = await db.conversations.get(cid);
+    return conversation;
+  },
+  async getConversationFromMid(mid: string): Promise<Conversation | undefined> {
+    const conversations = await db.conversations.toArray();
+    const c = conversations.find(
+      (conversation) => conversation.messageId === mid
+    );
+    console.log(c);
+    return c;
   },
 };

@@ -110,6 +110,7 @@ const SocketProvider = ({ children }: { children: ReactNode }) => {
 
   useEffect(() => {
     if (user && user.username) {
+      console.log("connecting socket");
       const socket = io(
         `${import.meta.env.VITE_SOCKET_URL}?username=${user.username}`
       );
@@ -127,6 +128,7 @@ const SocketProvider = ({ children }: { children: ReactNode }) => {
       // socket.on("error_msg", err_message);
 
       return () => {
+        console.log("closing socket");
         socket.close();
         setSocket(null);
 
@@ -141,7 +143,7 @@ const SocketProvider = ({ children }: { children: ReactNode }) => {
         // socket.off("error_msg", err_message);
       };
     }
-  }, [user]);
+  }, [user?.username]);
 
   return (
     <SocketContext.Provider value={{ socket }}>

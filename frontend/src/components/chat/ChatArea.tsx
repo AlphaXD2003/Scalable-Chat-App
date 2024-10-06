@@ -1,6 +1,20 @@
-import React, { KeyboardEvent, ReactEventHandler, useState } from "react";
+import React, { useEffect, useState } from "react";
 import { format } from "date-fns";
 import { useUserContext } from "@/context/UserContext";
+import axios from "axios";
+import { Skeleton } from "@/components/ui/skeleton";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { ChevronDownIcon } from "lucide-react";
+
+import { messageService } from "@/services/messageService";
+import { conversationService } from "@/services/conversationService";
 
 interface Message {
   id: string;
@@ -13,12 +27,18 @@ interface ChatAreaProps {
   conversationId: string;
   messages: Message[];
   onSendMessage: (text: string, cid: string) => void;
+  setMessages: any;
+  loadConverSationFromLocally: any;
+  emitDeleteMessage: any;
 }
 
 const ChatArea: React.FC<ChatAreaProps> = ({
   conversationId,
   messages,
   onSendMessage,
+  setMessages,
+  loadConverSationFromLocally,
+  emitDeleteMessage,
 }) => {
   const [inputText, setInputText] = useState("");
 
@@ -30,6 +50,85 @@ const ChatArea: React.FC<ChatAreaProps> = ({
   };
   const { user } = useUserContext();
   console.log(`Username: `, user.username);
+  const [isUser, setIsUser] = useState<boolean | null>(null);
+  const checkUserOrgroup = async () => {
+    try {
+      const response = await axios.post(
+        `${import.meta.env.VITE_BACKEND_URL}/user/checkuserorgroup`,
+        {
+          name: conversationId,
+        },
+        { withCredentials: true }
+      );
+      setIsUser(response.data.data);
+    } catch (error) {}
+  };
+
+  const [activeDeleteMessage, setActiveDeleteMessage] =
+    useState<Message | null>(null);
+
+  const handleDeleteForMe = async () => {
+    try {
+      if (activeDeleteMessage?.id) {
+        const response = await messageService.deleteMessage(
+          activeDeleteMessage.id
+        );
+        console.log(response);
+
+        setMessages((prevMessages: Message[]) => {
+          return prevMessages.map((message) => {
+            if (message.id === activeDeleteMessage.id) {
+              return { ...message, text: "This message was deleted" };
+            }
+            return message;
+          });
+        });
+        const conversation = await conversationService.getConversation(
+          conversationId
+        );
+        console.log("CID", conversation);
+        await emitDeleteMessage(activeDeleteMessage.id, conversationId);
+
+        if (
+          conversation?.lastMessageTimestamp &&
+          new Date(activeDeleteMessage.timestamp).getTime() -
+            new Date(conversation?.lastMessageTimestamp).getTime() <=
+            200
+        ) {
+          await conversationService.updateLastMessage(
+            conversationId,
+            "This message was deleted"
+          );
+        }
+        await loadConverSationFromLocally();
+        setActiveDeleteMessage(null);
+      }
+    } catch (error) {
+      setActiveDeleteMessage(null);
+      console.error("Error deleting message:", error);
+    }
+  };
+
+  useEffect(() => {
+    (async () => {
+      try {
+        await checkUserOrgroup();
+      } catch (error) {
+        console.error("Error checking user or group:", error);
+      }
+    })();
+  }, []);
+
+  useEffect(() => {
+    if (activeDeleteMessage) {
+      (async () => {
+        await handleDeleteForMe();
+      })();
+    }
+  }, [activeDeleteMessage]);
+  if (typeof isUser != "boolean") {
+    return <Skeleton className="w-[100px] h-[20px] rounded-full" />;
+  }
   return (
     <div
       onKeyDown={(e) => {
@@ -37,7 +136,7 @@ const ChatArea: React.FC<ChatAreaProps> = ({
           handleSend();
         }
       }}
-      className="flex flex-col h-full"
+      className="flex flex-col h-full "
     >
       <div className="flex-grow overflow-y-auto p-4 space-y-4">
         {messages.map((message) => (
@@ -47,22 +146,50 @@ const ChatArea: React.FC<ChatAreaProps> = ({
               message.sender === user.username ? "justify-end" : "justify-start"
             }`}
           >
-            <div>
+            <div className="">
               <div
-                className={`max-w-xs rounded-lg p-3 ${
+                className={`max-w-xs rounded-lg p-3 lg:min-w-[200px] ${
                   message.sender === user.username
                     ? "bg-green-500 text-white"
                     : "bg-gray-700"
                 }`}
               >
-                <div
-                  className={`text-xs ${
-                    message.sender === user.username
-                      ? "text-gray-900"
-                      : "text-neutral-400"
-                  }`}
-                >
-                  {message.sender}
+                <div className="flex justify-between items-center">
+                  <div
+                    className={`text-xs ${
+                      message.sender === user.username
+                        ? "text-gray-900"
+                        : "text-neutral-400"
+                    }`}
+                  >
+                    {message.sender}
+                  </div>
+
+                  <DropdownMenu>
+                    <DropdownMenuTrigger>
+                      <ChevronDownIcon />
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent className="bg-gray-800 cursor-pointer">
+                      <DropdownMenuItem className="cursor-pointer">
+                        Edit
+                      </DropdownMenuItem>
+                      {message.sender === user.username ? (
+                        <DropdownMenuItem
+                          className="cursor-pointer"
+                          onClick={async () => {
+                            // setDeleteDialogOpen((prev) => !prev);
+                            setActiveDeleteMessage(message);
+                            // await handleDeleteForMe();
+                          }}
+                        >
+                          Delete
+                        </DropdownMenuItem>
+                      ) : null}
+                      <DropdownMenuItem className="cursor-pointer">
+                        Forward
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
                 </div>
                 <p>{message.text}</p>
                 <p className="text-xs text-right mt-1 opacity-70">
@@ -73,6 +200,7 @@ const ChatArea: React.FC<ChatAreaProps> = ({
           </div>
         ))}
       </div>
+
       <div className="border-t p-4 flex">
         <input
           type="text"

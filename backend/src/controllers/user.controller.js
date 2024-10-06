@@ -386,6 +386,32 @@ const getUserDetailsFromUsername = async (req, res) => {
   }
 };
 
+const checkUserOrGroup = async (req, res) => {
+  try {
+    const { name } = req.body;
+    console.log(name);
+    const user = await User.findOne({ username: name });
+    if (user) {
+      return res
+        .status(201)
+        .json(new ApiResponse(201, "It is username of a user", true));
+    } else {
+      return res
+        .status(201)
+        .json(new ApiResponse(201, "It is not a username of a user", false));
+    }
+  } catch (error) {
+    return res
+      .status(error.statusCode || 401)
+      .json(
+        new ApiResponse(
+          error.statusCode || 401,
+          error.message || "Error While saving contact"
+        )
+      );
+  }
+};
+
 module.exports = {
   getUserDetailsFromUsername,
   getUserDetailsFromEmail,
@@ -397,4 +423,5 @@ module.exports = {
   verify,
   saveContact,
   getAllContactsOfAuser,
+  checkUserOrGroup,
 };

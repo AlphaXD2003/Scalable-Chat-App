@@ -1,5 +1,7 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { formatDistanceToNow } from "date-fns";
+import axios from "axios";
+import { Skeleton } from "@/components/ui/skeleton";
 
 interface Conversation {
   id: string;
@@ -12,7 +14,7 @@ interface Conversation {
 
 interface ConversationCardProps {
   conversation: Conversation;
-  onSelect: (id: string) => void;
+  onSelect: (id: string, isUser: boolean) => void;
   selectedConversation: any;
 }
 
@@ -23,13 +25,32 @@ const ConversationCard: React.FC<ConversationCardProps> = ({
 }) => {
   const { id, name, lastMessage, lastMessageTimestamp, unreadCount, avatar } =
     conversation;
+  const [isUser, setIsUser] = useState<boolean | null>(null);
 
+  const checkUserOrgroup = async () => {
+    try {
+      const response = await axios.post(
+        `${import.meta.env.VITE_BACKEND_URL}/user/checkuserorgroup`,
+        {
+          name: id,
+        },
+        { withCredentials: true }
+      );
+      setIsUser(response.data.data);
+    } catch (error) {}
+  };
+  useEffect(() => {
+    (async () => await checkUserOrgroup())();
+  }, []);
+  if (typeof isUser != "boolean") {
+    return <Skeleton className="w-[100px] h-[20px] rounded-full" />;
+  }
   return (
     <div
       className={`flex items-center p-3 hover:bg-gray-700 cursor-pointer ${
         selectedConversation === id ? `bg-gray-700` : null
       }`}
-      onClick={() => onSelect(id)}
+      onClick={() => onSelect(id, isUser)}
     >
       <img
         src={conversation.avatar}

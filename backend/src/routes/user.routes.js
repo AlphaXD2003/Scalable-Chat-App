@@ -10,6 +10,7 @@ const {
   createGroups,
   getUserDetailsFromEmail,
   getUserDetailsFromUsername,
+  checkUserOrGroup,
 } = require("../controllers/user.controller");
 const { authMiddleware } = require("../middlewares/auth.middleware");
 const upload = require("../middlewares/multer.middleware");
@@ -34,5 +35,6 @@ router
 //contact
 router.route("/save").post(authMiddleware, saveContact);
 router.route("/contact").post(authMiddleware, getAllContactsOfAuser);
+router.route("/checkuserorgroup").post(authMiddleware, checkUserOrGroup);
 
 module.exports = router;

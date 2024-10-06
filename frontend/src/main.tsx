@@ -7,6 +7,7 @@ import { createBrowserRouter, RouterProvider } from "react-router-dom";
 import { routes } from "@/routes/mainRoutes.tsx";
 import UserContextProvider from "./context/UserContext.tsx";
 import SocketProvider from "./context/SocketContext.tsx";
+
 const router = createBrowserRouter(routes);
 createRoot(document.getElementById("root")!).render(
   <ThemeProvider>
