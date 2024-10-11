@@ -11,7 +11,7 @@ const kafkaInit = async () => {
       topics: [
         {
           topic: process.env.KAFKA_TOPIC,
-          numPartitions: 5,
+          numPartitions: 10,
           replicationFactor: 1,
         },
       ],

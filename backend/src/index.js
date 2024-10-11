@@ -6,6 +6,7 @@ const { httpServer } = require("./app");
 const connectDatabase = require("./db/db");
 const { kafkaInit } = require("./kafka/admin");
 const { initConsumer } = require("./kafka/consumer");
+const { DeleteMessage } = require("./models/deleteMessages.model");
 const { ChatMessageModel } = require("./models/message.model");
 const User = require("./models/user.models");
 const { redis } = require("./redis/redis");
@@ -118,6 +119,18 @@ connectDatabase()
                 roomType: "group",
               });
               await redis.deleteKey(key);
+            } else if (partition == process.env.KAFKA_CHAT_DELETE_ID) {
+              const key = message.key.toString();
+              const value = JSON.parse(message.value.toString());
+              await DeleteMessage.create({
+                from: value.from,
+                to: value.username,
+                messageId: value.messageId,
+                name: value.name,
+              });
+              await redis.deleteKey(
+                `offline:delete:${value.username}:${value.messageid}`
+              );
             } else {
               console.log("oops");
             }

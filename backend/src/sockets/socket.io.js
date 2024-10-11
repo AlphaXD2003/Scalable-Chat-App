@@ -6,6 +6,7 @@ const { produceInKakfa } = require("../kafka/producer");
 const { ChatMessageModel } = require("../models/message.model");
 const User = require("../models/user.models");
 const { GroupInfo } = require("../models/groupsInfo.models");
+const { DeleteMessage } = require("../models/deleteMessages.model");
 class Socket {
   constructor(WebServer) {
     this.messages = { isSubscribed: false };
@@ -124,7 +125,28 @@ class Socket {
       if (!this.delete_message.isSubscribed) {
         await redis.subscribeChannel("delete_message", async (data) => {
           const adata = JSON.parse(data);
-          this.socketio.to(adata.name).emit("delete_msg_online", adata);
+          console.log("Adata: ", adata);
+          const userstatus = await redis.getValue(adata.name);
+          if (!userstatus && userstatus?.toLowerCase() === "online") {
+            return this.socketio
+              .to(adata.name)
+              .emit("delete_msg_online", adata);
+          }
+
+          await redis.setValue({
+            key: `offline:delete:${adata.name}:${adata.messageId}`,
+            value: JSON.stringify(adata),
+          });
+          await produceInKakfa({
+            topic: process.env.KAFKA_TOPIC,
+            messages: [
+              {
+                key: adata.messageId,
+                value: JSON.stringify(adata),
+                partition: Number(process.env.KAFKA_CHAT_DELETE_ID),
+              },
+            ],
+          });
         });
         this.delete_message.isSubscribed = true;
       }
@@ -239,6 +261,7 @@ class Socket {
         ],
       });
       console.log(groupmessagesFromDB);
+      //ofline group messages
       console.log("Sending offline group messages to ", socket.username);
       offLineGroupMessages = [...groupmessagesFromDB, ...offLineGroupMessages];
       socket.emit("groupmessage:offline", offLineGroupMessages);
@@ -246,6 +269,40 @@ class Socket {
       await ChatMessageModel.deleteMany({
         receiver: socket.username,
       });
+
+      const offlineDeleteMessages = await redis.getKeys(
+        `offline:delete:${username}:*`
+      );
+      //offline message delete
+      console.log("OfflineDeleteMessages", offlineDeleteMessages);
+      const offLineMessageDeleteIds = [];
+      for (const offlineDelMsg of offlineDeleteMessages) {
+        const data = await redis.getValue(offlineDelMsg);
+        console.log(JSON.parse(data));
+        offLineMessageDeleteIds.push(data.messageId);
+        await redis.deleteKey(offlineDelMsg);
+        await produceInKakfa({
+          topic: process.env.KAFKA_TOPIC,
+          messages: [
+            {
+              key: data.messageId,
+              value: null,
+              partition: process.env.KAFKA_CHAT_DELETE_ID,
+            },
+          ],
+        });
+      }
+      const moreOfflineDelMsg = await DeleteMessage.find({
+        name: socket.username,
+      });
+      for (const msg of moreOfflineDelMsg) {
+        offLineMessageDeleteIds.push(msg);
+      }
+
+      socket
+        .to(socket.username)
+        .emit("delete_msg_offline", offLineMessageDeleteIds);
+      await DeleteMessage.deleteMany({ name: socket.username });
       socket.on("send_message", async (data) => {
         console.log(data);
         const username = data.username;
@@ -280,7 +337,11 @@ class Socket {
       socket.on("delete_message", async (data) => {
         await redis.publishMessage({
           channel: "delete_message",
-          message: JSON.stringify({ ...data, timestamp: new Date() }),
+          message: JSON.stringify({
+            ...data,
+            timestamp: new Date(),
+            from: socket.username,
+          }),
         });
       });
 
