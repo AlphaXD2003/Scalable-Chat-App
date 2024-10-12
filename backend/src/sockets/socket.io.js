@@ -14,7 +14,7 @@ class Socket {
     this.delete_message = { isSubscribed: false };
     this.socketio = new Server(WebServer, {
       cors: {
-        origin: ["http://localhost:5173"],
+        origin: ["http://localhost:5173", "http://192.168.0.104:5173"],
         credentials: true,
       },
     });
@@ -32,6 +32,7 @@ class Socket {
           const userstatus = await redis.getValue(adata.username);
           console.log(userstatus);
           console.log(`Adata: `, adata);
+          console.log(adata.uid);
           if (userstatus === "offline" || !userstatus) {
             console.log(`${adata.username} is offline.`);
 
@@ -125,28 +126,27 @@ class Socket {
       if (!this.delete_message.isSubscribed) {
         await redis.subscribeChannel("delete_message", async (data) => {
           const adata = JSON.parse(data);
-          console.log("Adata: ", adata);
+          console.log("Adata OffM: ", adata);
           const userstatus = await redis.getValue(adata.name);
-          if (!userstatus && userstatus?.toLowerCase() === "online") {
-            return this.socketio
-              .to(adata.name)
-              .emit("delete_msg_online", adata);
+          if (userstatus && userstatus == "online") {
+            console.log("userstatus: ", userstatus);
+            this.socketio.to(adata.name).emit("delete_msg_online", adata);
+          } else {
+            await redis.setValue({
+              key: `offline:delete:${adata.name}:${adata.messageId}`,
+              value: JSON.stringify(adata),
+            });
+            await produceInKakfa({
+              topic: process.env.KAFKA_TOPIC,
+              messages: [
+                {
+                  key: adata.messageId,
+                  value: JSON.stringify(adata),
+                  partition: Number(process.env.KAFKA_CHAT_DELETE_ID),
+                },
+              ],
+            });
           }
-
-          await redis.setValue({
-            key: `offline:delete:${adata.name}:${adata.messageId}`,
-            value: JSON.stringify(adata),
-          });
-          await produceInKakfa({
-            topic: process.env.KAFKA_TOPIC,
-            messages: [
-              {
-                key: adata.messageId,
-                value: JSON.stringify(adata),
-                partition: Number(process.env.KAFKA_CHAT_DELETE_ID),
-              },
-            ],
-          });
         });
         this.delete_message.isSubscribed = true;
       }
@@ -275,17 +275,18 @@ class Socket {
       );
       //offline message delete
       console.log("OfflineDeleteMessages", offlineDeleteMessages);
-      const offLineMessageDeleteIds = [];
+      let offLineMessageDeleteIds = [];
       for (const offlineDelMsg of offlineDeleteMessages) {
         const data = await redis.getValue(offlineDelMsg);
         console.log(JSON.parse(data));
-        offLineMessageDeleteIds.push(data.messageId);
+        const adata = JSON.parse(data);
+        offLineMessageDeleteIds.push(adata.messageId);
         await redis.deleteKey(offlineDelMsg);
         await produceInKakfa({
           topic: process.env.KAFKA_TOPIC,
           messages: [
             {
-              key: data.messageId,
+              key: adata.messageId,
               value: null,
               partition: process.env.KAFKA_CHAT_DELETE_ID,
             },
@@ -296,12 +297,14 @@ class Socket {
         name: socket.username,
       });
       for (const msg of moreOfflineDelMsg) {
-        offLineMessageDeleteIds.push(msg);
+        offLineMessageDeleteIds.push(msg.messageId);
       }
-
-      socket
+      console.log("offLineMessageDeleteIds: ", offLineMessageDeleteIds);
+      const offLineMessageDeleteIdsSet = [...new Set(offLineMessageDeleteIds)];
+      this.socketio
         .to(socket.username)
-        .emit("delete_msg_offline", offLineMessageDeleteIds);
+        .emit("delete_msg_offline", offLineMessageDeleteIdsSet);
+      offLineMessageDeleteIds = [];
       await DeleteMessage.deleteMany({ name: socket.username });
       socket.on("send_message", async (data) => {
         console.log(data);

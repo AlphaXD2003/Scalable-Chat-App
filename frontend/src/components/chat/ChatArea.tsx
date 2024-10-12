@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { format } from "date-fns";
 import { useUserContext } from "@/context/UserContext";
 import axios from "axios";
@@ -19,17 +19,18 @@ import { conversationService } from "@/services/conversationService";
 interface Message {
   id: string;
   text: string;
-  sender: "self" | "other";
+  sender: string;
   timestamp: Date;
 }
 
 interface ChatAreaProps {
   conversationId: string;
   messages: Message[];
-  onSendMessage: (text: string, cid: string) => void;
+  onSendMessage: (text: string, cid: string, isUser: boolean) => void;
   setMessages: any;
   loadConverSationFromLocally: any;
   emitDeleteMessage: any;
+  sendDelete: any;
 }
 
 const ChatArea: React.FC<ChatAreaProps> = ({
@@ -39,18 +40,20 @@ const ChatArea: React.FC<ChatAreaProps> = ({
   setMessages,
   loadConverSationFromLocally,
   emitDeleteMessage,
+  sendDelete,
 }) => {
   const [inputText, setInputText] = useState("");
 
   const handleSend = () => {
     if (inputText.trim()) {
-      onSendMessage(inputText, conversationId);
+      onSendMessage(inputText, conversationId, isUser);
       setInputText("");
     }
   };
   const { user } = useUserContext();
   console.log(`Username: `, user.username);
-  const [isUser, setIsUser] = useState<boolean | null>(null);
+  const [isUser, setIsUser] = useState<boolean>(false);
+  const chatEndRef = useRef<HTMLDivElement>(null);
   const checkUserOrgroup = async () => {
     try {
       const response = await axios.post(
@@ -63,7 +66,11 @@ const ChatArea: React.FC<ChatAreaProps> = ({
       setIsUser(response.data.data);
     } catch (error) {}
   };
-
+  const scrollToBottom = () => {
+    if (chatEndRef.current) {
+      chatEndRef.current.scrollIntoView({ behavior: "smooth" });
+    }
+  };
   const [activeDeleteMessage, setActiveDeleteMessage] =
     useState<Message | null>(null);
 
@@ -108,11 +115,14 @@ const ChatArea: React.FC<ChatAreaProps> = ({
       console.error("Error deleting message:", error);
     }
   };
-
+  useEffect(() => {
+    scrollToBottom();
+  }, [messages]);
   useEffect(() => {
     (async () => {
       try {
         await checkUserOrgroup();
+        scrollToBottom();
       } catch (error) {
         console.error("Error checking user or group:", error);
       }
@@ -129,6 +139,7 @@ const ChatArea: React.FC<ChatAreaProps> = ({
   if (typeof isUser != "boolean") {
     return <Skeleton className="w-[100px] h-[20px] rounded-full" />;
   }
+
   return (
     <div
       onKeyDown={(e) => {
@@ -139,7 +150,7 @@ const ChatArea: React.FC<ChatAreaProps> = ({
       className="flex flex-col h-full "
     >
       <div className="flex-grow overflow-y-auto p-4 space-y-4">
-        {messages.map((message) => (
+        {messages.map((message, index) => (
           <div
             key={message.id}
             className={`flex ${
@@ -179,6 +190,11 @@ const ChatArea: React.FC<ChatAreaProps> = ({
                           onClick={async () => {
                             // setDeleteDialogOpen((prev) => !prev);
                             setActiveDeleteMessage(message);
+                            sendDelete(
+                              message.id,
+                              user.username,
+                              conversationId
+                            );
                             // await handleDeleteForMe();
                           }}
                         >
@@ -216,6 +232,7 @@ const ChatArea: React.FC<ChatAreaProps> = ({
           Send
         </button>
       </div>
+      <div ref={chatEndRef} />
     </div>
   );
 };

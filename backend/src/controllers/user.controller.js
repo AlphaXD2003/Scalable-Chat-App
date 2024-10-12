@@ -163,6 +163,7 @@ const login = async (req, res) => {
     const [accessToken, refreshToken] = await generateToken(user);
     if (!accessToken && !refreshToken)
       throw new ApiErrors(401, "Tokens Are not Created");
+    console.log({ accessToken, refreshToken });
     await redis.setValue({
       key: user._id.toString(),
       value: JSON.stringify({

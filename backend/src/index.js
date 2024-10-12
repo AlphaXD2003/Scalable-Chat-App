@@ -122,15 +122,18 @@ connectDatabase()
             } else if (partition == process.env.KAFKA_CHAT_DELETE_ID) {
               const key = message.key.toString();
               const value = JSON.parse(message.value.toString());
-              await DeleteMessage.create({
-                from: value.from,
-                to: value.username,
-                messageId: value.messageId,
-                name: value.name,
-              });
-              await redis.deleteKey(
-                `offline:delete:${value.username}:${value.messageid}`
-              );
+              if (!value) return;
+              try {
+                await DeleteMessage.create({
+                  from: value.from,
+                  to: value.username,
+                  messageId: value.messageId,
+                  name: value.name,
+                });
+                await redis.deleteKey(
+                  `offline:delete:${value.username}:${value.messageId}`
+                );
+              } catch (error) {}
             } else {
               console.log("oops");
             }

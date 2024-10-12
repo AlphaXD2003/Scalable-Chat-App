@@ -79,11 +79,18 @@ export const conversationService = {
     return conversation;
   },
   async getConversationFromMid(mid: string): Promise<Conversation | undefined> {
-    const conversations = await db.conversations.toArray();
-    const c = conversations.find(
-      (conversation) => conversation.messageId === mid
-    );
-    console.log(c);
-    return c;
+    const message = await db.messages.get(mid);
+    if (!message) {
+      console.error(`Message with ID ${mid} not found`);
+      return;
+    }
+    const conversationId = message.conversationId;
+    const conversation = await db.conversations.get(conversationId);
+    if (!conversation) {
+      console.error(`Conversation with ID ${conversationId} not found`);
+      return;
+    }
+    console.log(conversation);
+    return conversation;
   },
 };

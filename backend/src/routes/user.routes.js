@@ -22,7 +22,7 @@ router.route("/test").get(test);
 // in secure  routes
 router.route("/signup").post(upload.single("avatar"), signup);
 router.route("/login").post(login);
-router.route("/verify/:id").post(verify);
+router.route("/verify/:id").get(verify);
 
 //secure routes
 router.route("/logout").post(authMiddleware, logout);
