@@ -287,12 +287,13 @@ const getGroupDetilsByname = async (req, res) => {
     const group = await Group.findOne({ name });
     return res.status(201).json(new ApiResponse(201, "Group FOund", group));
   } catch (error) {
+    console.log(error);
     return res
       .status(error.statusCode || 401)
       .json(
         new ApiResponse(
           error.statusCode || 401,
-          error.message || "Error While saving contact"
+          error.message || "Error getting group details"
         )
       );
   }

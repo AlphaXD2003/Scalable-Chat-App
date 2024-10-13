@@ -314,13 +314,14 @@ const Home: React.FC = () => {
           text: msg.message,
           timestamp: new Date(msg?.time || msg?.createdAt || Date.now()),
         });
-        const userDeatils = await axios.post(
-          `${import.meta.env.VITE_BACKEND_URL}/user/usernamedetails`,
+        const groupDetails = await axios.post(
+          `${import.meta.env.VITE_BACKEND_URL}/group//group_details_name`,
           {
-            username: msg.sender,
+            name: msg.groupname || msg.roomId,
           },
           { withCredentials: true }
         );
+        console.log(groupDetails);
         if (msg.groupname) {
           const conversation = await conversationService.updateConversation(
             msg.groupname,
@@ -330,7 +331,7 @@ const Home: React.FC = () => {
               messageId: msg.uid,
               sender: "other",
               text: msg.message,
-              avatar: userDeatils.data.avatar,
+              avatar: groupDetails.data.data.avatar,
               user: msg.sender,
               timestamp: new Date(msg.time || msg.createdAt || Date.now()),
             }
@@ -347,7 +348,7 @@ const Home: React.FC = () => {
               messageId: msg.uid,
               sender: "other",
               text: msg.message,
-              avatar: userDeatils.data.avatar,
+              avatar: groupDetails.data.avatar,
               user: msg.sender,
               timestamp: new Date(msg.time || msg.createdAt || Date.now()),
             }
