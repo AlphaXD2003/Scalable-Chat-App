@@ -30,6 +30,7 @@ const ConversationCard: React.FC<ConversationCardProps> = ({
   const [isUser, setIsUser] = useState<null | boolean>(null);
 
   const checkUserOrgroup = async () => {
+    console.log("Conversation Id:", id);
     try {
       const response = await axios.post(
         `${import.meta.env.VITE_BACKEND_URL}/user/checkuserorgroup`,
@@ -38,9 +39,11 @@ const ConversationCard: React.FC<ConversationCardProps> = ({
         },
         { withCredentials: true }
       );
-
+      console.log({ id, data: response.data.data });
       setIsUser(response.data.data);
-    } catch (error) {}
+    } catch (error) {
+      console.log("cerror", error);
+    }
   };
   useEffect(() => {
     (async () => await checkUserOrgroup())();

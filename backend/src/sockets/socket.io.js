@@ -68,6 +68,10 @@ class Socket {
         await redis.subscribeChannel("group_messages", async (data) => {
           const adata = JSON.parse(data);
           const uid = adata.uid;
+          const arr = uid.split("-");
+          const len = arr.length;
+          const time = Number(arr[len - 1]);
+          console.log("op time: ", time);
           const message = adata.message;
           const groupname = adata.groupname;
           console.log("Groupname: ", groupname);
@@ -99,7 +103,7 @@ class Socket {
                 key: `offlinegroup:${groupname}:${username}:${uid}`,
                 value: JSON.stringify({
                   ...adata,
-                  time: Date.now(),
+                  time: time,
                   receiver: username,
                 }),
               });
@@ -111,7 +115,7 @@ class Socket {
                     key: `offlinegroup:${groupname}:${username}:${uid}`,
                     value: JSON.stringify({
                       ...adata,
-                      time: Date.now(),
+                      time: time,
                       receiver: username,
                     }),
                     partition: Number(process.env.KAFKA_CHAT_GROUP_OFFLINE_ID),
@@ -330,7 +334,7 @@ class Socket {
 
       socket.on("group_message_send", async (data) => {
         const uid = data.mid;
-
+        console.log(data);
         await redis.publishMessage({
           channel: "group_messages",
           message: JSON.stringify({ ...data, uid, sender: socket.username }),

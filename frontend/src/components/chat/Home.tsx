@@ -81,6 +81,19 @@ interface IncomingDeleteMessage {
   from: string;
 }
 
+interface IncomingOfflineGroupMessage {
+  createdAt?: Date;
+  message: string;
+  roomId?: string;
+  groupname?: string;
+  sender: string;
+  sendingTime: Date;
+  type: string;
+  uid: string;
+  receiver: string;
+  time?: number;
+}
+
 const Home: React.FC = () => {
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [selectedConversation, setSelectedConversation] = useState<
@@ -95,50 +108,47 @@ const Home: React.FC = () => {
   useEffect(() => {
     selectedConversationRef.current = selectedConversation;
   }, [selectedConversation]);
-  const handleMessageReceive = useCallback(
-    async (data: IncomingMessage) => {
-      console.log("123", selectedConversation);
-      console.log(data);
-      await messageService.addMessage({
-        conversationId: data.sender,
-        id: data.uid,
-        sender: data.sender,
-        text: data.message,
-        timestamp: new Date(),
-      });
+  const handleMessageReceive = useCallback(async (data: IncomingMessage) => {
+    console.log("123", selectedConversation);
+    console.log(data);
+    await messageService.addMessage({
+      conversationId: data.sender,
+      id: data.uid,
+      sender: data.sender,
+      text: data.message,
+      timestamp: new Date(),
+    });
 
-      const userDeatils = await axios.post(
-        `${import.meta.env.VITE_BACKEND_URL}/user/usernamedetails`,
-        {
-          username: data.sender,
-        },
-        { withCredentials: true }
-      );
+    const userDeatils = await axios.post(
+      `${import.meta.env.VITE_BACKEND_URL}/user/usernamedetails`,
+      {
+        username: data.sender,
+      },
+      { withCredentials: true }
+    );
 
-      await conversationService.updateConversation(data.sender, {
-        conversationId: data.sender,
-        id: data.sender,
-        sender: "other",
-        text: data.message,
-        timestamp: new Date(),
-        avatar: userDeatils.data.data.avatar,
-        messageId: data.uid,
-      });
-      console.log("sender data: ", data.sender);
-      console.log("selected conversation: ", selectedConversation);
+    await conversationService.updateConversation(data.sender, {
+      conversationId: data.sender,
+      id: data.sender,
+      sender: "other",
+      text: data.message,
+      timestamp: new Date(),
+      avatar: userDeatils.data.data.avatar,
+      messageId: data.uid,
+    });
+    console.log("sender data: ", data.sender);
+    console.log("selected conversation: ", selectedConversation);
 
-      if (
-        selectedConversation == data.sender ||
-        selectedConversationRef.current === data.sender
-      ) {
-        console.log("true");
-        // await conversationService.updateUnReadMessage(data.sender);
-        await loadMessages(data.sender);
-      }
-      await loadConverSationFromLocally();
-    },
-    [socket]
-  );
+    if (
+      selectedConversation == data.sender ||
+      selectedConversationRef.current === data.sender
+    ) {
+      console.log("true");
+      // await conversationService.updateUnReadMessage(data.sender);
+      await loadMessages(data.sender);
+    }
+    await loadConverSationFromLocally();
+  }, []);
   const handleGroupMessageReceive = useCallback(
     async (data: IncomingGroupMessage) => {
       await messageService.addMessage({
@@ -292,12 +302,73 @@ const Home: React.FC = () => {
     [socket]
   );
 
+  const handleOfflineGroupMessage = useCallback(
+    async (data: IncomingOfflineGroupMessage[]) => {
+      console.log("Offline Group Message: ", data);
+      for (const msg of data) {
+        console.log("grp: ", msg);
+        await messageService.addMessage({
+          conversationId: msg.groupname || msg.roomId || "",
+          id: msg.uid,
+          sender: msg.sender,
+          text: msg.message,
+          timestamp: new Date(msg?.time || msg?.createdAt || Date.now()),
+        });
+        const userDeatils = await axios.post(
+          `${import.meta.env.VITE_BACKEND_URL}/user/usernamedetails`,
+          {
+            username: msg.sender,
+          },
+          { withCredentials: true }
+        );
+        if (msg.groupname) {
+          const conversation = await conversationService.updateConversation(
+            msg.groupname,
+            {
+              conversationId: msg.groupname,
+              id: msg.groupname,
+              messageId: msg.uid,
+              sender: "other",
+              text: msg.message,
+              avatar: userDeatils.data.avatar,
+              user: msg.sender,
+              timestamp: new Date(msg.time || msg.createdAt || Date.now()),
+            }
+          );
+          if (selectedConversationRef.current == msg.groupname) {
+            loadMessages(msg.groupname);
+          }
+        } else if (msg.roomId) {
+          const conversation = await conversationService.updateConversation(
+            msg.roomId,
+            {
+              conversationId: msg.roomId,
+              id: msg.roomId,
+              messageId: msg.uid,
+              sender: "other",
+              text: msg.message,
+              avatar: userDeatils.data.avatar,
+              user: msg.sender,
+              timestamp: new Date(msg.time || msg.createdAt || Date.now()),
+            }
+          );
+          if (selectedConversationRef.current == msg.roomId) {
+            loadMessages(msg.roomId);
+          }
+        }
+      }
+      await loadConverSationFromLocally();
+    },
+    []
+  );
+
   useEffect(() => {
     if (socket) {
       console.log("onning events");
       socket.on("receive_message", handleMessageReceive);
       socket.on("receive_group_message", handleGroupMessageReceive);
       socket.on("message:offline", handleOfflinePrivateMessage);
+      socket.on("groupmessage:offline", handleOfflineGroupMessage);
       socket.on("delete_msg_online", handleDeleteMessage);
       socket.on("delete_msg_offline", handleOfflineDeleteMessage);
     }
@@ -308,6 +379,7 @@ const Home: React.FC = () => {
         socket.off("receive_message", handleMessageReceive);
         socket.off("receive_group_message", handleGroupMessageReceive);
         socket.off("message:offline", handleOfflinePrivateMessage);
+        socket.off("groupmessage:offline", handleOfflineGroupMessage);
         socket.off("delete_msg_online", handleDeleteMessage);
         socket.off("delete_msg_offline", handleOfflineDeleteMessage);
       }
