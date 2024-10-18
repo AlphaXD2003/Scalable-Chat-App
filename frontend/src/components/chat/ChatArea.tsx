@@ -26,7 +26,7 @@ interface Message {
 interface ChatAreaProps {
   conversationId: string;
   messages: Message[];
-  onSendMessage: (text: string, cid: string, isUser: boolean) => void;
+  onSendMessage: (text: string, cid: string) => void;
   setMessages: any;
   loadConverSationFromLocally: any;
   emitDeleteMessage: any;
@@ -46,7 +46,7 @@ const ChatArea: React.FC<ChatAreaProps> = ({
 
   const handleSend = () => {
     if (inputText.trim()) {
-      onSendMessage(inputText, conversationId, isUser);
+      onSendMessage(inputText, conversationId);
       setInputText("");
     }
   };

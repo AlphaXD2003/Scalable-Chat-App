@@ -151,6 +151,7 @@ const Home: React.FC = () => {
   }, []);
   const handleGroupMessageReceive = useCallback(
     async (data: IncomingGroupMessage) => {
+      console.log("gdata : ", data);
       await messageService.addMessage({
         conversationId: data.groupname,
         id: data.uid,
@@ -158,7 +159,7 @@ const Home: React.FC = () => {
         text: data.message,
         timestamp: new Date(),
       });
-      if (selectedConversation === data.groupname) {
+      if (selectedConversationRef.current === data.groupname) {
         await loadMessages(data.groupname);
       }
       const response = await axios.post(
@@ -238,6 +239,7 @@ const Home: React.FC = () => {
   );
   const sendDelete = useCallback(
     async (mid: string, username: string, cid: string) => {
+      console.log({ mid, username, cid });
       socket?.emit("delete_message", {
         messageId: mid,
         name: cid,
@@ -268,10 +270,10 @@ const Home: React.FC = () => {
       console.log("Name", from);
       console.log("Selected C", selectedConversation);
       if (
-        from === selectedConversation ||
-        from === selectedConversationRef.current
+        name === selectedConversation ||
+        name === selectedConversationRef.current
       ) {
-        await loadMessages(from);
+        await loadMessages(name);
       }
     },
     [socket]
@@ -418,16 +420,29 @@ const Home: React.FC = () => {
     []
   );
   const { user } = useUserContext();
-
-  const handleSendMessage = async (
-    text: string,
-    cid: string,
-    isUser: boolean
-  ) => {
-    // Send message to API
-    // This is a placeholder. Replace with actual API call.
+  const checkUserOrgroup = async () => {
+    console.log("Conversation Id:", selectedConversationRef.current);
+    try {
+      const response = await axios.post(
+        `${import.meta.env.VITE_BACKEND_URL}/user/checkuserorgroup`,
+        {
+          name: selectedConversationRef.current,
+        },
+        { withCredentials: true }
+      );
+      console.log({
+        "Id: ": selectedConversationRef.current,
+        data: response.data.data,
+      });
+      return response.data.data;
+    } catch (error) {
+      console.log("cerror", error);
+    }
+  };
+  const handleSendMessage = async (text: string, cid: string) => {
     console.log("CID: ", cid);
-    console.log("Is User:", isUser);
+
+    const isuser = await checkUserOrgroup();
     const mid = `${user.username}-${cid}-${Date.now()}`;
     const newMessage: any = {
       id: mid,
@@ -435,25 +450,26 @@ const Home: React.FC = () => {
       sender: user.username,
       timestamp: new Date(),
     };
-    setMessages((prevMessages) => [...prevMessages, newMessage]);
-    await messageService.addMessage({
-      ...newMessage,
-      conversationId: cid,
-    });
+    // setMessages((prevMessages) => [...prevMessages, newMessage]);
 
-    if (isUser) {
+    if (isuser) {
       socket?.emit("send_message", {
         username: cid,
         message: text,
         mid,
       });
+      await messageService.addMessage({
+        ...newMessage,
+        conversationId: cid,
+      });
+      await loadMessages(cid);
     } else {
       socket?.emit("group_message_send", {
         message: text,
         type: "text",
         groupname: cid,
         roomType: "group",
-        mid: `${user.username}-${cid}-${Date.now()}`,
+        mid,
       });
     }
     await conversationService.updateLastMessage(cid, text);

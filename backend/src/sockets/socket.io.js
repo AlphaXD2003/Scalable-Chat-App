@@ -132,7 +132,20 @@ class Socket {
           const adata = JSON.parse(data);
           console.log("Adata OffM: ", adata);
           const userstatus = await redis.getValue(adata.name);
-          if (userstatus && userstatus == "online") {
+          console.log("userstatus: ", userstatus);
+          const isUser = await User.findOne({ username: adata.name });
+          let condition1 = false;
+          if (isUser) {
+            if (userstatus && userstatus == "online") {
+              condition1 = true;
+            } else {
+              condition1 = false;
+            }
+          } else {
+            condition1 = true;
+          }
+          console.log("condition1", condition1);
+          if (condition1) {
             console.log("userstatus: ", userstatus);
             this.socketio.to(adata.name).emit("delete_msg_online", adata);
           } else {
@@ -342,6 +355,7 @@ class Socket {
       });
 
       socket.on("delete_message", async (data) => {
+        console.log("Ddata: ", data);
         await redis.publishMessage({
           channel: "delete_message",
           message: JSON.stringify({
