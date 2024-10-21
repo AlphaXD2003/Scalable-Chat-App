@@ -25,10 +25,15 @@ export const conversationService = {
   async loadConversations(): Promise<Conversation[]> {
     const conversations = await db.conversations.toArray();
 
-    return conversations.sort(
-      (a, b) =>
-        b.lastMessageTimestamp.getTime() - a.lastMessageTimestamp.getTime()
-    );
+    return conversations
+      .map((conversation) => ({
+        ...conversation,
+        lastMessageTimestamp: new Date(conversation.lastMessageTimestamp),
+      }))
+      .sort(
+        (a, b) =>
+          b.lastMessageTimestamp.getTime() - a.lastMessageTimestamp.getTime()
+      );
   },
 
   async updateConversation(
@@ -39,8 +44,10 @@ export const conversationService = {
     const conversation = await db.conversations.get(conversationId);
     if (conversation) {
       conversation.lastMessage = message.text;
-      conversation.lastMessageTimestamp = message.timestamp;
+      conversation.lastMessageTimestamp = new Date(message.timestamp);
       conversation.unreadCount += 1;
+      conversation.messageId = message.messageId;
+
       await db.conversations.put(conversation);
     } else {
       await db.conversations.add({

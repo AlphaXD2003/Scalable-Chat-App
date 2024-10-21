@@ -271,9 +271,12 @@ const Home: React.FC = () => {
       console.log("Selected C", selectedConversation);
       if (
         name === selectedConversation ||
-        name === selectedConversationRef.current
+        name === selectedConversationRef.current ||
+        from === selectedConversationRef.current
       ) {
-        await loadMessages(name);
+        if (selectedConversationRef.current !== null) {
+          await loadMessages(selectedConversationRef.current);
+        }
       }
     },
     [socket]
@@ -281,6 +284,7 @@ const Home: React.FC = () => {
 
   const handleOfflineDeleteMessage = useCallback(
     async (data: string[]) => {
+      console.log(data);
       for (const msg of data) {
         console.log("msg", msg);
         await messageService.deleteMessage(msg);

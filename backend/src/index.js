@@ -126,12 +126,12 @@ connectDatabase()
               try {
                 await DeleteMessage.create({
                   from: value.from,
-                  to: value.username,
+                  to: value.to,
                   messageId: value.messageId,
                   name: value.name,
                 });
                 await redis.deleteKey(
-                  `offline:delete:${value.username}:${value.messageId}`
+                  `offline:delete:${value.to}:${value.messageId}`
                 );
               } catch (error) {}
             } else {

@@ -142,27 +142,62 @@ class Socket {
               condition1 = false;
             }
           } else {
-            condition1 = true;
+            condition1 = false;
           }
           console.log("condition1", condition1);
-          if (condition1) {
-            console.log("userstatus: ", userstatus);
-            this.socketio.to(adata.name).emit("delete_msg_online", adata);
-          } else {
+
+          console.log("userstatus: ", userstatus);
+          this.socketio.to(adata.name).emit("delete_msg_online", adata);
+          if (isUser) {
             await redis.setValue({
               key: `offline:delete:${adata.name}:${adata.messageId}`,
-              value: JSON.stringify(adata),
+              value: JSON.stringify({ ...adata, to: adata.name }),
             });
             await produceInKakfa({
               topic: process.env.KAFKA_TOPIC,
               messages: [
                 {
                   key: adata.messageId,
-                  value: JSON.stringify(adata),
+                  value: JSON.stringify({ ...adata, to: adata.name }),
                   partition: Number(process.env.KAFKA_CHAT_DELETE_ID),
                 },
               ],
             });
+          } else {
+            console.log("Name is group");
+            const groups = await GroupInfo.find({ groupname: adata.name });
+            const members = [];
+            for (const group of groups) {
+              members.push(group.memberId);
+            }
+
+            for (const member of members) {
+              let memberusername;
+              const redisMember = await redis.getValue(member.toString());
+              if (redisMember) {
+                memberusername = JSON.parse(redisMember).username;
+              } else {
+                const user = await User.findById(member.toString());
+                memberusername = user.username;
+              }
+              const userstatus = await redis.getValue(memberusername);
+              if (userstatus == "offline") {
+                await redis.setValue({
+                  key: `offline:delete:${memberusername}:${adata.messageId}`,
+                  value: JSON.stringify({ ...adata, to: memberusername }),
+                });
+                await produceInKakfa({
+                  topic: process.env.KAFKA_TOPIC,
+                  messages: [
+                    {
+                      key: adata.messageId,
+                      value: JSON.stringify({ ...adata, to: memberusername }),
+                      partition: Number(process.env.KAFKA_CHAT_DELETE_ID),
+                    },
+                  ],
+                });
+              }
+            }
           }
         });
         this.delete_message.isSubscribed = true;
@@ -318,11 +353,19 @@ class Socket {
       }
       console.log("offLineMessageDeleteIds: ", offLineMessageDeleteIds);
       const offLineMessageDeleteIdsSet = [...new Set(offLineMessageDeleteIds)];
+
+      offLineMessageDeleteIds = [];
+      await DeleteMessage.deleteMany({
+        $or: [
+          { name: socket.username },
+          {
+            to: socket.username,
+          },
+        ],
+      });
       this.socketio
         .to(socket.username)
         .emit("delete_msg_offline", offLineMessageDeleteIdsSet);
-      offLineMessageDeleteIds = [];
-      await DeleteMessage.deleteMany({ name: socket.username });
       socket.on("send_message", async (data) => {
         console.log(data);
         const username = data.username;
