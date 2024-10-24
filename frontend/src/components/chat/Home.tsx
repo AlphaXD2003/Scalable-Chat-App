@@ -7,6 +7,7 @@ import { conversationService } from "@/services/conversationService";
 import axios from "axios";
 import { Audio } from "react-loader-spinner";
 import { useUserContext } from "@/context/UserContext";
+import { Popover, PopoverButton, PopoverPanel } from "@headlessui/react";
 import {
   MessageSquare,
   Send,
@@ -21,7 +22,13 @@ import {
   Cross,
   CrossIcon,
   DeleteIcon,
+  PlusCircle,
+  Contact,
 } from "lucide-react";
+import CreateNewContact from "./CreateNewContact";
+import { useToast } from "@/hooks/use-toast";
+import { Toast, ToastProvider } from "../ui/toast";
+import Contacts from "../User/Contacts";
 interface Conversation {
   id: string;
   name: string;
@@ -101,6 +108,9 @@ const Home: React.FC = () => {
   >(null);
   const [messages, setMessages] = useState<Message[]>([]);
   const [searchContact, setSearchContact] = useState<string>("");
+  // open
+  const [newContact, setNewContact] = useState<boolean>(false);
+  const [newContactPage, setNewContactPage] = useState<boolean>(false);
   // Socket
   const [socket] = useSocket();
   console.log(socket);
@@ -369,6 +379,8 @@ const Home: React.FC = () => {
     []
   );
 
+  const { toast } = useToast();
+
   useEffect(() => {
     if (socket) {
       console.log("onning events");
@@ -412,14 +424,30 @@ const Home: React.FC = () => {
   }, []);
 
   const handleSelectConversation = useCallback(
-    async (id: string, isUser: boolean) => {
+    async (id: string, isUser: boolean, avatar?: string) => {
       console.log(isUser);
       console.log(id);
       setSelectedConversation(id);
-      await conversationService.updateUnReadMessage(id);
-      await conversationService.loadConversations();
-      await loadConverSationFromLocally();
-      await loadMessages(id);
+      const conv = await conversationService.getConversation(id);
+      if (conv) {
+        await conversationService.updateUnReadMessage(id);
+        await conversationService.loadConversations();
+        await loadConverSationFromLocally();
+        await loadMessages(id);
+      } else {
+        await conversationService.updateConversation(id, {
+          conversationId: id,
+          messageId: "",
+          id: id,
+          sender: "self",
+          text: "",
+          timestamp: new Date(),
+          avatar: avatar || "",
+        });
+        await conversationService.loadConversations();
+        await loadConverSationFromLocally();
+        await loadMessages(id);
+      }
     },
     []
   );
@@ -506,14 +534,55 @@ const Home: React.FC = () => {
         onKeyDown={(e) => {
           if (e.key === "Escape") {
             setSelectedConversation(null);
+            selectedConversationRef.current = null;
+            setNewContactPage(false);
           }
         }}
+        tabIndex={5}
       >
+        <ToastProvider />
         <div className="w-1/3 bg-gray-800 border-r overflow-y-auto">
           <div className="bg-gray-900 p-4 flex justify-between items-center ">
             <img src={user?.avatar} className="w-10 h-10 rounded-full" />
             <div className="flex space-x-4">
-              <MessageSquare
+              <Popover className="relative">
+                <PopoverButton>
+                  <PlusCircle
+                    size={24}
+                    className="text-gray-300 cursor-pointer"
+                  />
+                </PopoverButton>
+                <PopoverPanel
+                  transition
+                  anchor="bottom"
+                  className="divide-y divide-white/5 rounded-xl cursor-pointer bg-white/5 text-sm/6 transition duration-200 ease-in-out [--anchor-gap:var(--spacing-5)] data-[closed]:-translate-y-1 data-[closed]:opacity-0"
+                >
+                  <div className="p-3">
+                    <div className="block rounded-lg py-2 px-3 transition hover:bg-white/5">
+                      <p
+                        className="font-semibold text-white"
+                        onClick={() => setNewContact(true)}
+                      >
+                        New Contact
+                      </p>
+                      <p className="text-white/50">Create a new contact</p>
+                    </div>
+
+                    <div className="block rounded-lg py-2 px-3 transition hover:bg-white/5">
+                      <p className="font-semibold text-white">
+                        Create new Group
+                      </p>
+                      <p className="text-white/50">
+                        Create a group and add members
+                      </p>
+                    </div>
+                  </div>
+                </PopoverPanel>
+              </Popover>
+              <Contact
+                onClick={() => {
+                  setNewContactPage(true);
+                }}
                 size={24}
                 className="text-gray-300 cursor-pointer"
               />
@@ -551,6 +620,7 @@ const Home: React.FC = () => {
                 onSelect={handleSelectConversation}
                 selectedConversation={selectedConversation}
                 setSelectedConversation={setSelectedConversation}
+                setNewContactPage={setNewContactPage}
               />
             ))}
           {searchContact &&
@@ -567,11 +637,12 @@ const Home: React.FC = () => {
                   onSelect={handleSelectConversation}
                   selectedConversation={selectedConversation}
                   setSelectedConversation={setSelectedConversation}
+                  setNewContactPage={setNewContactPage}
                 />
               ))}
         </div>
         <div className="flex-1">
-          {selectedConversation ? (
+          {!newContactPage && selectedConversation ? (
             <ChatArea
               sendDelete={sendDelete}
               conversationId={selectedConversation}
@@ -581,12 +652,36 @@ const Home: React.FC = () => {
               loadConverSationFromLocally={loadConverSationFromLocally}
               emitDeleteMessage={emitDeleteMessage}
             />
+          ) : newContactPage ? (
+            <div>
+              <Contacts
+                setSelectedConversation={setSelectedConversation}
+                selectedConversationRef={selectedConversationRef}
+                setNewContactPage={setNewContactPage}
+                handleSelectConversation={handleSelectConversation}
+              />
+            </div>
           ) : (
             <div className="h-full flex items-center justify-center text-gray-400 gap-4">
               <ChartBar />
               Select a chat to start chatting
             </div>
           )}
+        </div>
+        {/* new contact */}
+        <div
+          tabIndex={10}
+          onKeyDown={(e) => {
+            if (e.key == "Escape") {
+              setNewContact(false);
+            }
+          }}
+        >
+          <CreateNewContact
+            open={newContact}
+            setOpen={setNewContact}
+            toast={toast}
+          />
         </div>
       </div>
     );

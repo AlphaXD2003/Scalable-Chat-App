@@ -17,6 +17,7 @@ interface ConversationCardProps {
   onSelect: (id: string, isUser: boolean) => void;
   selectedConversation: any;
   setSelectedConversation: any;
+  setNewContactPage: any;
 }
 
 const ConversationCard: React.FC<ConversationCardProps> = ({
@@ -24,6 +25,7 @@ const ConversationCard: React.FC<ConversationCardProps> = ({
   onSelect,
   selectedConversation,
   setSelectedConversation,
+  setNewContactPage,
 }) => {
   const { id, name, lastMessage, lastMessageTimestamp, unreadCount, avatar } =
     conversation;
@@ -63,6 +65,7 @@ const ConversationCard: React.FC<ConversationCardProps> = ({
           onSelect(id, isUser);
           console.log("SelConvID", conversation);
           setSelectedConversation(conversation.id);
+          setNewContactPage(false);
         }}
       >
         <img
@@ -75,7 +78,9 @@ const ConversationCard: React.FC<ConversationCardProps> = ({
             {conversation.id.toUpperCase()}
           </h3>
           <p className="text-sm text-gray-400 truncate">
-            {conversation.lastMessage}
+            {conversation.lastMessage.length > 10
+              ? conversation.lastMessage.slice(0, 10) + "..."
+              : conversation.lastMessage}
           </p>
         </div>
         <div className="text-right">

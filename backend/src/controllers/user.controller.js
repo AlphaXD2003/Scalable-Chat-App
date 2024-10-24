@@ -310,6 +310,7 @@ const saveContact = async (req, res) => {
     });
     return res.status(201).json(new ApiResponse(201, "Contact Saved", true));
   } catch (error) {
+    console.log(error);
     return res
       .status(error.statusCode || 401)
       .json(
