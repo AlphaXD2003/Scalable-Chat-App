@@ -29,6 +29,7 @@ import CreateNewContact from "./CreateNewContact";
 import { useToast } from "@/hooks/use-toast";
 import { Toast, ToastProvider } from "../ui/toast";
 import Contacts from "../User/Contacts";
+import CreateNewGroup from "./CreateNewGroup";
 interface Conversation {
   id: string;
   name: string;
@@ -110,7 +111,9 @@ const Home: React.FC = () => {
   const [searchContact, setSearchContact] = useState<string>("");
   // open
   const [newContact, setNewContact] = useState<boolean>(false);
+  const [newGroup, setNewGroup] = useState<boolean>(false);
   const [newContactPage, setNewContactPage] = useState<boolean>(false);
+
   // Socket
   const [socket] = useSocket();
   console.log(socket);
@@ -568,7 +571,10 @@ const Home: React.FC = () => {
                       <p className="text-white/50">Create a new contact</p>
                     </div>
 
-                    <div className="block rounded-lg py-2 px-3 transition hover:bg-white/5">
+                    <div
+                      onClick={() => setNewGroup(true)}
+                      className="block rounded-lg py-2 px-3 transition hover:bg-white/5"
+                    >
                       <p className="font-semibold text-white">
                         Create new Group
                       </p>
@@ -682,6 +688,7 @@ const Home: React.FC = () => {
             setOpen={setNewContact}
             toast={toast}
           />
+          <CreateNewGroup open={newGroup} setOpen={setNewGroup} toast={toast} />
         </div>
       </div>
     );
