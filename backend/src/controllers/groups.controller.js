@@ -299,6 +299,34 @@ const getGroupDetilsByname = async (req, res) => {
   }
 };
 
+const fetchUsersOfGroup = async (req, res) => {
+  try {
+    const { groupname } = req.body;
+    const response = await GroupInfo.find({ groupname });
+    const user = [];
+    for (const res of response) {
+      const udata = await User.findById(res.memberId);
+      user.push({
+        id: udata._id,
+        username: udata.username,
+        email: udata.username,
+        avatar: udata.avatar,
+      });
+    }
+    return res.status(201).json(new ApiResponse(201, "Fetched", user));
+  } catch (error) {
+    console.log(error);
+    return res
+      .status(error.statusCode || 401)
+      .json(
+        new ApiResponse(
+          error.statusCode || 401,
+          error.message || "Error getting group details"
+        )
+      );
+  }
+};
+
 module.exports = {
   getGroupDetilsByname,
   createGroups,
@@ -309,4 +337,5 @@ module.exports = {
   removeAdmin,
   deleteGroup,
   fetchGroupsByUsername,
+  fetchUsersOfGroup,
 };

@@ -8,6 +8,7 @@ const {
   deleteGroup,
   fetchGroupsByUsername,
   getGroupDetilsByname,
+  fetchUsersOfGroup,
 } = require("../controllers/groups.controller");
 const { authMiddleware } = require("../middlewares/auth.middleware");
 const upload = require("../middlewares/multer.middleware");
@@ -27,5 +28,6 @@ router.route("/admin/remove/:gname").post(authMiddleware, removeAdmin);
 router.route("/delete/:gname").delete(authMiddleware, deleteGroup);
 router.route("/groups_username").post(authMiddleware, fetchGroupsByUsername);
 router.route("/group_details_name").post(authMiddleware, getGroupDetilsByname);
+router.route("/users_group").post(authMiddleware, fetchUsersOfGroup);
 
 module.exports = router;

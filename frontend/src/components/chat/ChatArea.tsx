@@ -15,6 +15,7 @@ import { ChevronDownIcon } from "lucide-react";
 
 import { messageService } from "@/services/messageService";
 import { conversationService } from "@/services/conversationService";
+import ChatHeader from "./ChatUpper";
 
 interface Message {
   id: string;
@@ -115,6 +116,8 @@ const ChatArea: React.FC<ChatAreaProps> = ({
       console.error("Error deleting message:", error);
     }
   };
+  const [conversation, setConversation] = useState<any>();
+
   useEffect(() => {
     scrollToBottom();
   }, [messages]);
@@ -149,6 +152,9 @@ const ChatArea: React.FC<ChatAreaProps> = ({
       }}
       className="flex flex-col h-full "
     >
+      <div>
+        <ChatHeader conversationId={conversationId} />
+      </div>
       <div className="flex-grow overflow-y-auto p-4 space-y-4">
         {messages.map((message, index) => (
           <div
