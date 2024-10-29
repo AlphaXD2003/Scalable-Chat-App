@@ -426,34 +426,41 @@ const Home: React.FC = () => {
     } catch (error) {}
   }, []);
 
-  const handleSelectConversation = useCallback(
-    async (id: string, isUser: boolean, avatar?: string) => {
-      console.log(isUser);
-      console.log(id);
+  const handleSelectConversation = async (
+    id: string,
+    isUser: boolean,
+    avatar?: string
+  ) => {
+    console.log(isUser);
+    console.log(id);
+
+    const conv = await conversationService.getConversation(id);
+    console.log("conv1:", conv);
+    if (conv?.id) {
+      await conversationService.updateUnReadMessage(id);
+      await conversationService.loadConversations();
+      await loadConverSationFromLocally();
+      await loadMessages(id);
+    } else {
+      await conversationService.updateConversation(id, {
+        conversationId: id,
+        messageId: Math.random().toString() + Date.now().toString(),
+        id: id,
+        sender: "self",
+        text: " ",
+        timestamp: new Date(),
+        avatar: avatar || "",
+      });
+      await conversationService.loadConversations();
+      await loadConverSationFromLocally();
+      // await loadMessages(id);
       setSelectedConversation(id);
-      const conv = await conversationService.getConversation(id);
-      if (conv) {
-        await conversationService.updateUnReadMessage(id);
-        await conversationService.loadConversations();
-        await loadConverSationFromLocally();
-        await loadMessages(id);
-      } else {
-        await conversationService.updateConversation(id, {
-          conversationId: id,
-          messageId: "",
-          id: id,
-          sender: "self",
-          text: "",
-          timestamp: new Date(),
-          avatar: avatar || "",
-        });
-        await conversationService.loadConversations();
-        await loadConverSationFromLocally();
-        await loadMessages(id);
-      }
-    },
-    []
-  );
+      selectedConversationRef.current = id;
+      setNewContactPage(false);
+      setNewGroup(false);
+      setNewContact(false);
+    }
+  };
   const { user } = useUserContext();
   const checkUserOrgroup = async () => {
     console.log("Conversation Id:", selectedConversationRef.current);
@@ -648,10 +655,10 @@ const Home: React.FC = () => {
               ))}
         </div>
         <div className="flex-1">
-          {!newContactPage && selectedConversation ? (
+          {!newContactPage && selectedConversationRef.current ? (
             <ChatArea
               sendDelete={sendDelete}
-              conversationId={selectedConversation}
+              conversationId={selectedConversationRef.current}
               messages={messages}
               onSendMessage={handleSendMessage}
               setMessages={setMessages}

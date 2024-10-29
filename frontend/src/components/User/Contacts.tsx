@@ -171,10 +171,7 @@ const Contacts = ({
                       key={index}
                       className="cursor-pointer lg:min-w-[400px] lg:min-h-5 border p-3 rounded-xl bg-gray-800"
                       onClick={() => {
-                        selectedConversationRef.current =
-                          usernames[contact.savedEmail];
-                        setSelectedConversation(usernames[contact.savedEmail]);
-                        setNewContactPage(false);
+                        // setNewContactPage(false);
                         handleSelectConversation(
                           usernames[contact.savedEmail],
                           true,

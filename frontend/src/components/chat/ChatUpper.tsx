@@ -138,17 +138,15 @@ const ChatHeader = ({ conversationId }: Props) => {
     }
   }, [conversationId, isUser]);
 
-  if (!conversation) {
-    return null;
-  }
-
   const formatStatus = (status: string | null) => {
     if (!status) return "";
     return isNaN(Number(status))
       ? status.toUpperCase()
       : new Date(Number(status)).toLocaleString();
   };
-
+  if (!conversation) {
+    return <></>;
+  }
   return (
     <div className="flex items-center justify-between px-4 py-2 bg-gray-900 border-b border-gray-800">
       <div className="flex items-center space-x-3">

@@ -122,6 +122,7 @@ const ChatArea: React.FC<ChatAreaProps> = ({
     scrollToBottom();
   }, [messages]);
   useEffect(() => {
+    console.log(conversationId);
     (async () => {
       try {
         await checkUserOrgroup();
