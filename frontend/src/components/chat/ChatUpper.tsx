@@ -35,7 +35,10 @@ interface UserStatus {
 }
 
 const ChatHeader = ({ conversationId }: Props) => {
-  const [conversation, setConversation] = useState<Conversation | null>(null);
+  console.log(conversationId);
+  const [conversation, setConversation] = useState<Conversation | null | any>(
+    null
+  );
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isUser, setIsUser] = useState<boolean>(false);
   const [userStatus, setUserStatus] = useState<UserStatus>({
@@ -52,6 +55,7 @@ const ChatHeader = ({ conversationId }: Props) => {
   const fetchConversation = async () => {
     try {
       const conv = await conversationService.getConversation(conversationId);
+      console.log(conv);
       if (conv) {
         setConversation(conv);
       }
@@ -106,7 +110,7 @@ const ChatHeader = ({ conversationId }: Props) => {
   // Setup initial data
   useEffect(() => {
     const initialize = async () => {
-      await Promise.all([fetchConversation(), checkUserOrGroup()]);
+      await Promise.all([checkUserOrGroup(), fetchConversation()]);
     };
 
     initialize();
@@ -144,7 +148,7 @@ const ChatHeader = ({ conversationId }: Props) => {
       ? status.toUpperCase()
       : new Date(Number(status)).toLocaleString();
   };
-  if (!conversation) {
+  if (!conversation || !conversationId) {
     return <></>;
   }
   return (

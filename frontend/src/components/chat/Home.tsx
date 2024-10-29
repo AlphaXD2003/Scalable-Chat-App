@@ -451,14 +451,16 @@ const Home: React.FC = () => {
         timestamp: new Date(),
         avatar: avatar || "",
       });
-      await conversationService.loadConversations();
-      await loadConverSationFromLocally();
-      // await loadMessages(id);
+
       setSelectedConversation(id);
-      selectedConversationRef.current = id;
+
       setNewContactPage(false);
       setNewGroup(false);
       setNewContact(false);
+      await conversationService.loadConversations();
+      await loadConverSationFromLocally();
+      selectedConversationRef.current = id;
+      await loadMessages(id);
     }
   };
   const { user } = useUserContext();

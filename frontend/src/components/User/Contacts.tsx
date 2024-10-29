@@ -132,7 +132,7 @@ const Contacts = ({
   } else {
     return (
       <div className="w-full h-screen flex ">
-        {contacts.length > 0 ? (
+        {contacts.length > 0 || groups.length > 0 ? (
           <div className="w-full items-center justify-center m-10 border">
             <div className="flex flex-col justify-start">
               <div className="text-xl mb-4 mt-2 ml-3">
@@ -157,42 +157,45 @@ const Contacts = ({
               </div>
             </div>
             <div className=" flex flex-col gap-2">
-              {contacts
-                .filter((contact) => {
-                  if (searchValue) {
-                    return usernames[contact.savedEmail].includes(searchValue);
-                  } else {
-                    return true;
-                  }
-                })
-                .map((contact, index) => {
-                  return (
-                    <div
-                      key={index}
-                      className="cursor-pointer lg:min-w-[400px] lg:min-h-5 border p-3 rounded-xl bg-gray-800"
-                      onClick={() => {
-                        // setNewContactPage(false);
-                        handleSelectConversation(
-                          usernames[contact.savedEmail],
-                          true,
-                          avatars[contact.savedEmail]
-                        );
-                      }}
-                    >
-                      <div className="flex flex-row justify-start items-center gap-4">
-                        <img
-                          src={avatars[contact.savedEmail] || ""}
-                          alt="avatar"
-                          className="w-10 h-10 rounded-full"
-                        />
-                        <div>
-                          {usernames[contact.savedEmail]?.toUpperCase()}
+              {contacts.length > 0 &&
+                contacts
+                  .filter((contact) => {
+                    if (searchValue) {
+                      return usernames[contact.savedEmail].includes(
+                        searchValue
+                      );
+                    } else {
+                      return true;
+                    }
+                  })
+                  .map((contact, index) => {
+                    return (
+                      <div
+                        key={index}
+                        className="cursor-pointer lg:min-w-[400px] lg:min-h-5 border p-3 rounded-xl bg-gray-800"
+                        onClick={() => {
+                          // setNewContactPage(false);
+                          handleSelectConversation(
+                            usernames[contact.savedEmail],
+                            true,
+                            avatars[contact.savedEmail]
+                          );
+                        }}
+                      >
+                        <div className="flex flex-row justify-start items-center gap-4">
+                          <img
+                            src={avatars[contact.savedEmail] || ""}
+                            alt="avatar"
+                            className="w-10 h-10 rounded-full"
+                          />
+                          <div>
+                            {usernames[contact.savedEmail]?.toUpperCase()}
+                          </div>
+                          <div></div>
                         </div>
-                        <div></div>
                       </div>
-                    </div>
-                  );
-                })}
+                    );
+                  })}
               {groups.length > 0 &&
                 groups
                   .filter((group) => {
@@ -210,9 +213,6 @@ const Contacts = ({
                         className="flex justify-start gap-4 items-center px-4 py-2 bg-gray-800 cursor-pointer rounded-lg"
                         key={group._id}
                         onClick={() => {
-                          setSelectedConversation(group.name);
-                          selectedConversationRef.current = group.name;
-                          setNewContactPage(false);
                           handleSelectConversation(
                             group.name,
                             false,
@@ -222,11 +222,11 @@ const Contacts = ({
                       >
                         <div className="flex gap-4 justify-center items-center">
                           <img
-                            src={group.avatar}
+                            src={group?.avatar}
                             alt="Group Avatar"
                             className="w-10 h-10 rounded-full"
                           />
-                          <div>{group.name.toUpperCase()}</div>
+                          <div>{group?.name.toUpperCase()}</div>
                         </div>
                         <div className="ml-auto mr-4">GROUP</div>
                       </div>

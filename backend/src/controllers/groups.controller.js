@@ -264,7 +264,7 @@ const fetchGroupsByUsername = async (req, res) => {
       groupData.push(data);
     });
     await Promise.all(promise);
-
+    console.log(groupData);
     return res
       .status(201)
       .json(new ApiResponse(201, "Groups Found", groupData));
