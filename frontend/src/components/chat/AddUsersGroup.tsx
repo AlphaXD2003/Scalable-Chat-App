@@ -13,6 +13,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { BlockList } from "net";
 import axios from "axios";
 import { useUserContext } from "@/context/UserContext";
+import { useSocket } from "@/context/SocketContext";
 interface Props {
   open: boolean;
   setOpen: any;
@@ -95,6 +96,8 @@ const AddMembersDialog = ({
     } catch (error) {}
   };
 
+  const [socket] = useSocket();
+
   useEffect(() => {
     (async () => {
       await fetchContactUser();
@@ -127,6 +130,10 @@ const AddMembersDialog = ({
         { withCredentials: true }
       );
       console.log(response.data.data);
+      socket?.emit("addMembersGroup", {
+        groupname: conversationId,
+        users: Array.from(selectedUsers),
+      });
     } catch (error) {
     } finally {
       setOpen(false);

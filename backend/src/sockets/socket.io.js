@@ -12,6 +12,7 @@ class Socket {
     this.messages = { isSubscribed: false };
     this.groupmessages = { isSubscribed: false };
     this.delete_message = { isSubscribed: false };
+    this.joinGroup = { isSubscribed: false };
     this.socketio = new Server(WebServer, {
       cors: {
         origin: ["http://localhost:5173", "http://192.168.0.104:5173"],
@@ -203,6 +204,20 @@ class Socket {
         this.delete_message.isSubscribed = true;
       }
 
+      if (!this.joinGroup.isSubscribed) {
+        await redis.subscribeChannel("joinGroup", async (data) => {
+          // this.socketio.
+          const adata = JSON.parse(data);
+          const { groupname } = adata.groupname;
+          console.log(adata.users);
+          const { users } = adata;
+          for (const user of users) {
+            this.socketio.to(user).emit("joinGroupSeparate", groupname);
+          }
+        });
+        this.joinGroup.isSubscribed = true;
+      }
+
       console.log(`New Socket connected: ${socket.id}`);
       const username = socket.handshake.query.username;
       try {
@@ -388,6 +403,10 @@ class Socket {
         });
       });
 
+      socket.on("joinGroupSeparate", (data) => {
+        socket.join(data);
+      });
+
       socket.on("group_message_send", async (data) => {
         const uid = data.mid;
         console.log(data);
@@ -405,6 +424,29 @@ class Socket {
             ...data,
             timestamp: new Date(),
             from: socket.username,
+          }),
+        });
+      });
+
+      socket.on("addMembersGroup", async (data) => {
+        const adata = [];
+        const { users } = data;
+        for (const ad of users) {
+          let username;
+          const user = await redis.getValue(ad);
+          if (user) {
+            username = JSON.parse(user).username;
+          } else {
+            const u = await User.findById(ad);
+            username = u.username;
+          }
+          adata.push(username);
+        }
+        await redis.publishMessage({
+          channel: "joinGroup",
+          message: JSON.stringify({
+            groupname: data.groupname,
+            users: adata,
           }),
         });
       });
