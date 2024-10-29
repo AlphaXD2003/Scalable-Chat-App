@@ -208,11 +208,22 @@ class Socket {
         await redis.subscribeChannel("joinGroup", async (data) => {
           // this.socketio.
           const adata = JSON.parse(data);
-          const { groupname } = adata.groupname;
-          console.log(adata.users);
+          console.log(adata);
+          const { groupname } = adata;
+          console.log(groupname);
           const { users } = adata;
+          console.log(users);
+          const userSockets = await this.socketio.fetchSockets();
           for (const user of users) {
+            console.log(user);
             this.socketio.to(user).emit("joinGroupSeparate", groupname);
+            const userSocket = userSockets.find(
+              (socket) => socket.username == user
+            );
+            if (userSocket) {
+              userSocket.join(groupname);
+              console.log(`User ${user} joined room ${groupname}`);
+            }
           }
         });
         this.joinGroup.isSubscribed = true;
@@ -403,7 +414,12 @@ class Socket {
         });
       });
 
+      socket.on("selfjoin", (data) => {
+        socket.join(data);
+      });
+
       socket.on("joinGroupSeparate", (data) => {
+        console.log(`${socket.username} joined ${data}`);
         socket.join(data);
       });
 

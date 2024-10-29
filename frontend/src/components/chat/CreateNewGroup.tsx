@@ -13,6 +13,7 @@ import { Button } from "../ui/button";
 import { useState } from "react";
 import axios from "axios";
 import { FileUpload } from "@/components/ui/file-upload";
+import { useSocket } from "@/context/SocketContext";
 const CreateNewGroup = ({
   open,
   setOpen,
@@ -24,7 +25,7 @@ const CreateNewGroup = ({
 }) => {
   const [groupName, setGroupName] = useState<string>("");
   const [groupDesc, setGroupDesc] = useState<string>("");
-
+  const [socket] = useSocket();
   const handleGroupCreation = async () => {
     try {
       const formData = new FormData();
@@ -44,6 +45,7 @@ const CreateNewGroup = ({
         }
       );
       console.log(response.data.data);
+      socket?.emit("selfjoin", groupName);
     } catch (error) {
     } finally {
       setOpen(false);
