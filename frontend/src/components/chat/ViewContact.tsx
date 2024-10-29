@@ -19,6 +19,7 @@ import {
   X,
 } from "lucide-react";
 import axios from "axios";
+import AddMembersDialog from "./AddUsersGroup";
 
 interface Conversation {
   id: string;
@@ -46,19 +47,7 @@ const ChatInfoView = ({
   const [muted, setMuted] = useState(false);
   console.log(conversation);
   const [users, setUsers] = useState<User[]>([]);
-  const participants = [
-    {
-      name: "John Doe",
-      status: "Group admin",
-      image: "/api/placeholder/40/40",
-    },
-    { name: "Alice Smith", status: "Online", image: "/api/placeholder/40/40" },
-    {
-      name: "Bob Wilson",
-      status: "Last seen today at 14:30",
-      image: "/api/placeholder/40/40",
-    },
-  ];
+  const [addPartOpen, setAddPartOpen] = useState<boolean>(false);
   const findgroupDetails = async () => {
     try {
       const res = await axios.post(
@@ -93,7 +82,7 @@ const ChatInfoView = ({
     }
   }, [conversation]);
 
-  if (!users) {
+  if (!users || !conversation) {
     return <></>;
   }
   return (
@@ -185,11 +174,18 @@ const ChatInfoView = ({
                     variant="ghost"
                     size="sm"
                     className="text-gray-300 hover:bg-gray-700"
+                    onClick={() => setAddPartOpen(true)}
                   >
                     <UserPlus className="h-4 w-4 mr-2" />
                     Add participant
                   </Button>
                 </div>
+                <AddMembersDialog
+                  conversationId={conversation.id}
+                  open={addPartOpen}
+                  setOpen={setAddPartOpen}
+                  findUsersOfGroup={findUsersOfGroup}
+                />
 
                 {/* Participants List */}
                 <div className="space-y-4">

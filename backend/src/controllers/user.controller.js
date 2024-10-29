@@ -391,7 +391,7 @@ const getUserDetailsFromUsername = async (req, res) => {
 const checkUserOrGroup = async (req, res) => {
   try {
     const { name } = req.body;
-    console.log(name);
+    console.log("Name: ", name);
     const user = await User.findOne({ username: name });
     if (user) {
       return res
@@ -414,7 +414,26 @@ const checkUserOrGroup = async (req, res) => {
   }
 };
 
+const getUserStatus = async (req, res) => {
+  try {
+    const { username } = req.body;
+    if (!username) throw new ApiErrors(401, "Username required");
+    const userstatus = await redis.getValue(username);
+    return res.status(201).json(new ApiResponse(201, "Status", userstatus));
+  } catch (error) {
+    return res
+      .status(error.statusCode || 401)
+      .json(
+        new ApiResponse(
+          error.statusCode || 401,
+          error.message || "Error fetching user status"
+        )
+      );
+  }
+};
+
 module.exports = {
+  getUserStatus,
   getUserDetailsFromUsername,
   getUserDetailsFromEmail,
   test,

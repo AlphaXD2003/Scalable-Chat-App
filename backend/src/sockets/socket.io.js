@@ -33,7 +33,7 @@ class Socket {
           console.log(userstatus);
           console.log(`Adata: `, adata);
           console.log(adata.uid);
-          if (userstatus === "offline" || !userstatus) {
+          if (userstatus !== "online" || !userstatus) {
             console.log(`${adata.username} is offline.`);
 
             await redis.setValue({
@@ -98,7 +98,7 @@ class Socket {
           console.log(usernameOfTheGroup);
           usernameOfTheGroup.forEach(async (username) => {
             const userstatus = await redis.getValue(username);
-            if (userstatus === "offline" || undefined) {
+            if (userstatus !== "online" || undefined) {
               await redis.setValue({
                 key: `offlinegroup:${groupname}:${username}:${uid}`,
                 value: JSON.stringify({
@@ -181,7 +181,7 @@ class Socket {
                 memberusername = user.username;
               }
               const userstatus = await redis.getValue(memberusername);
-              if (userstatus == "offline") {
+              if (userstatus !== "online") {
                 await redis.setValue({
                   key: `offline:delete:${memberusername}:${adata.messageId}`,
                   value: JSON.stringify({ ...adata, to: memberusername }),
@@ -410,7 +410,7 @@ class Socket {
       });
 
       socket.on("disconnect", async () => {
-        await redis.setValue({ key: socket.username, value: "offline" });
+        await redis.setValue({ key: socket.username, value: Date.now() });
         socket.username = undefined;
         clearInterval(heartbeatInterval);
         socket.groups = [];

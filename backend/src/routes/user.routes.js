@@ -11,6 +11,7 @@ const {
   getUserDetailsFromEmail,
   getUserDetailsFromUsername,
   checkUserOrGroup,
+  getUserStatus,
 } = require("../controllers/user.controller");
 const { authMiddleware } = require("../middlewares/auth.middleware");
 const upload = require("../middlewares/multer.middleware");
@@ -31,7 +32,7 @@ router.route("/emaildetails").post(authMiddleware, getUserDetailsFromEmail);
 router
   .route("/usernamedetails")
   .post(authMiddleware, getUserDetailsFromUsername);
-
+router.route("/status").post(authMiddleware, getUserStatus);
 //contact
 router.route("/save").post(authMiddleware, saveContact);
 router.route("/contact").post(authMiddleware, getAllContactsOfAuser);
