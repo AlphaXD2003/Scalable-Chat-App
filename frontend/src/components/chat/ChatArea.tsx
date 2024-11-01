@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import { format } from "date-fns";
 import { useUserContext } from "@/context/UserContext";
 import axios from "axios";
@@ -16,6 +16,7 @@ import { ChevronDownIcon } from "lucide-react";
 import { messageService } from "@/services/messageService";
 import { conversationService } from "@/services/conversationService";
 import ChatHeader from "./ChatUpper";
+import { Button } from "../ui/button";
 
 interface Message {
   id: string;
@@ -32,6 +33,7 @@ interface ChatAreaProps {
   loadConverSationFromLocally: any;
   emitDeleteMessage: any;
   sendDelete: any;
+  loadMessages: any;
 }
 
 const ChatArea: React.FC<ChatAreaProps> = ({
@@ -42,8 +44,67 @@ const ChatArea: React.FC<ChatAreaProps> = ({
   loadConverSationFromLocally,
   emitDeleteMessage,
   sendDelete,
+  loadMessages,
 }) => {
   const [inputText, setInputText] = useState("");
+
+  const [limit, setLimit] = useState<number>(20);
+  const [offSet, setOffSet] = useState<number>(0);
+  const [total, setTotal] = useState<number>(20);
+  const [isLoading, setIsLoading] = useState<boolean>(false);
+  const onHandleLoadOlderMessages = async () => {
+    if (isLoading || total <= messages.length) {
+      console.log("p");
+      return;
+    }
+    try {
+      setIsLoading(true);
+      const newOffSet = offSet + limit;
+
+      const data = await messageService.getMessages(
+        newOffSet,
+        20,
+        conversationId
+      );
+      console.log(data);
+      if (data.length > 0) {
+        const transformedMessages: Message[] = data.map((msg) => ({
+          id: msg.id,
+          sender: msg.sender,
+          text: msg.text,
+          timestamp: new Date(msg?.timestamp),
+        }));
+
+        setMessages((prev: Message[]) => [...transformedMessages, ...prev]);
+
+        setOffSet(newOffSet);
+      }
+    } catch (error) {
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const getMaxMessages = async () => {
+    try {
+      const response = await messageService.getTotalMessageCount(
+        conversationId
+      );
+      setTotal(response);
+    } catch (error) {}
+  };
+
+  useEffect(() => {
+    setOffSet(0);
+    (async () => {
+      await getMaxMessages();
+    })();
+
+    return () => {
+      setOffSet(0);
+      setTotal(20);
+    };
+  }, [conversationId]);
 
   const handleSend = () => {
     if (inputText.trim()) {
@@ -54,7 +115,7 @@ const ChatArea: React.FC<ChatAreaProps> = ({
   const { user } = useUserContext();
   console.log(`Username: `, user.username);
   const [isUser, setIsUser] = useState<boolean>(false);
-  const chatEndRef = useRef<HTMLDivElement>(null);
+
   const checkUserOrgroup = async () => {
     try {
       const response = await axios.post(
@@ -67,11 +128,7 @@ const ChatArea: React.FC<ChatAreaProps> = ({
       setIsUser(response.data.data);
     } catch (error) {}
   };
-  const scrollToBottom = () => {
-    if (chatEndRef.current) {
-      chatEndRef.current.scrollIntoView({ behavior: "smooth" });
-    }
-  };
+
   const [activeDeleteMessage, setActiveDeleteMessage] =
     useState<Message | null>(null);
 
@@ -116,17 +173,12 @@ const ChatArea: React.FC<ChatAreaProps> = ({
       console.error("Error deleting message:", error);
     }
   };
-  const [conversation, setConversation] = useState<any>();
 
-  useEffect(() => {
-    scrollToBottom();
-  }, [messages]);
   useEffect(() => {
     console.log(conversationId);
     (async () => {
       try {
         await checkUserOrgroup();
-        scrollToBottom();
       } catch (error) {
         console.error("Error checking user or group:", error);
       }
@@ -156,10 +208,21 @@ const ChatArea: React.FC<ChatAreaProps> = ({
       <div>
         <ChatHeader conversationId={conversationId} />
       </div>
-      <div className="flex-grow overflow-y-auto p-4 space-y-4">
+      <div className="flex-grow overflow-y-auto p-4 space-y-4 ">
+        <div className="absolute flex w-full opacity-40 text-white">
+          <Button
+            className="mx-auto"
+            color="white"
+            onClick={async () => {
+              await onHandleLoadOlderMessages();
+            }}
+          >
+            Load More
+          </Button>
+        </div>
         {messages.map((message, index) => (
           <div
-            key={message.id}
+            key={index}
             className={`flex ${
               message.sender === user.username ? "justify-end" : "justify-start"
             }`}
@@ -216,7 +279,7 @@ const ChatArea: React.FC<ChatAreaProps> = ({
                 </div>
                 <p>{message.text}</p>
                 <p className="text-xs text-right mt-1 opacity-70">
-                  {format(message.timestamp, "HH:mm")}
+                  {format(message?.timestamp, "HH:mm")}
                 </p>
               </div>
             </div>
@@ -239,7 +302,7 @@ const ChatArea: React.FC<ChatAreaProps> = ({
           Send
         </button>
       </div>
-      <div ref={chatEndRef} />
+      <div />
     </div>
   );
 };

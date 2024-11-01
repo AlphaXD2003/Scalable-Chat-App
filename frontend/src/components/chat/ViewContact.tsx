@@ -47,6 +47,13 @@ const ChatInfoView = ({
   const [muted, setMuted] = useState(false);
   console.log(conversation);
   const [users, setUsers] = useState<User[]>([]);
+  const [user, setUser] = useState<User>({
+    id: "",
+    status: "",
+    avatar: "",
+    email: "",
+    username: conversation.id,
+  });
   const [addPartOpen, setAddPartOpen] = useState<boolean>(false);
   const findgroupDetails = async () => {
     try {
@@ -73,16 +80,36 @@ const ChatInfoView = ({
       setUsers(res.data.data);
     } catch (error) {}
   };
+
+  const findUserInfo = async () => {
+    try {
+      const response = await axios.post(
+        `${import.meta.env.VITE_BACKEND_URL}/user/usernamedetails`,
+        {
+          username: conversation.id,
+        },
+        {
+          withCredentials: true,
+        }
+      );
+      setUser(response.data.data);
+      console.log(response.data.data);
+    } catch (error) {}
+  };
   useEffect(() => {
     if (isGroup) {
       (async () => {
         await findgroupDetails();
         await findUsersOfGroup();
       })();
+    } else {
+      (async () => {
+        await findUserInfo();
+      })();
     }
   }, [conversation]);
 
-  if (!users || !conversation) {
+  if (!(users || user) || !conversation) {
     return <></>;
   }
   return (
@@ -105,7 +132,7 @@ const ChatInfoView = ({
                 {conversation.id.toUpperCase()}
               </h3>
               <p className="text-sm text-gray-400">
-                {isGroup ? `Group • ${users.length} participants` : "Demo Mail"}
+                {isGroup ? `Group • ${users.length} participants` : user.email}
               </p>
             </div>
           </div>

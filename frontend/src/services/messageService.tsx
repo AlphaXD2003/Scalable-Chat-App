@@ -35,4 +35,36 @@ export const messageService = {
     }
     return false;
   },
+  async getTotalMessageCount(conversationId: string): Promise<number> {
+    let response;
+    if (conversationId) {
+      response = await db.messages
+        .where("conversationId")
+        .equals(conversationId)
+        .count();
+      return response;
+    } else {
+      return 0;
+    }
+  },
+
+  async getMessages(
+    offset = 0,
+    limit = 20,
+    conversationId: string
+  ): Promise<Message[]> {
+    let response;
+    if (conversationId) {
+      response = await db.messages
+        .where("conversationId")
+        .equals(conversationId)
+        .sortBy("timestamp"); // Sort by timestamp first
+      // .then((messages) => messages.reverse()) // Then reverse to get most recent first
+      // .then((messages) => messages.slice(offset, offset + limit)); // Apply offset and limit
+
+      return response.slice(-limit - offset, -offset || undefined);
+    } else {
+      return [];
+    }
+  },
 };

@@ -158,7 +158,17 @@ const Home: React.FC = () => {
     ) {
       console.log("true");
       // await conversationService.updateUnReadMessage(data.sender);
-      await loadMessages(data.sender);
+      // await loadMessages(data.sender);
+      setMessages((prev) => [
+        ...prev,
+        {
+          conversationId: data.sender,
+          id: data.uid,
+          sender: data.sender,
+          text: data.message,
+          timestamp: new Date(),
+        },
+      ]);
     }
     await loadConverSationFromLocally();
   }, []);
@@ -408,10 +418,30 @@ const Home: React.FC = () => {
     };
   }, [socket]);
 
+  // const loadMessages = useCallback(async (cid: string) => {
+  //   try {
+  //     console.log("loadM", cid);
+  //     const data = await messageService.loadMessages(cid);
+  //     console.log("ddata", data);
+  //     const transformedMessages: Message[] = data.map((msg) => ({
+  //       id: msg.id,
+  //       sender: msg.sender,
+  //       text: msg.text,
+  //       timestamp: new Date(msg.timestamp),
+  //     }));
+  //     console.log("transformedMessages,", transformedMessages);
+  //     setMessages((prev) => {
+  //       return transformedMessages;
+  //     });
+  //   } catch (error) {}
+  // }, []);
+
   const loadMessages = useCallback(async (cid: string) => {
     try {
       console.log("loadM", cid);
-      const data = await messageService.loadMessages(cid);
+      const length = await messageService.getTotalMessageCount(cid);
+      console.log(length);
+      const data = await messageService.getMessages(0, 20, cid);
       console.log("ddata", data);
       const transformedMessages: Message[] = data.map((msg) => ({
         id: msg.id,
@@ -506,7 +536,8 @@ const Home: React.FC = () => {
         ...newMessage,
         conversationId: cid,
       });
-      await loadMessages(cid);
+      // await loadMessages(cid);
+      setMessages((prev) => [...prev, newMessage]);
     } else {
       socket?.emit("group_message_send", {
         message: text,
@@ -666,6 +697,7 @@ const Home: React.FC = () => {
               setMessages={setMessages}
               loadConverSationFromLocally={loadConverSationFromLocally}
               emitDeleteMessage={emitDeleteMessage}
+              loadMessages={loadMessages}
             />
           ) : newContactPage ? (
             <div>
