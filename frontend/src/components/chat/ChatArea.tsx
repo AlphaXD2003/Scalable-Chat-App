@@ -52,7 +52,9 @@ const ChatArea: React.FC<ChatAreaProps> = ({
   const [offSet, setOffSet] = useState<number>(0);
   const [total, setTotal] = useState<number>(20);
   const [isLoading, setIsLoading] = useState<boolean>(false);
+  const [showScrollButton, setShowScrollButton] = useState<boolean>(false);
   const onHandleLoadOlderMessages = async () => {
+    setShowScrollButton(true);
     if (isLoading || total <= messages.length) {
       console.log("p");
       return;
@@ -173,7 +175,16 @@ const ChatArea: React.FC<ChatAreaProps> = ({
       console.error("Error deleting message:", error);
     }
   };
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+  // Scroll to bottom function
+  const scrollToBottom = useCallback(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    setShowScrollButton(false);
+  }, []);
 
+  useEffect(() => {
+    scrollToBottom();
+  }, [messages, scrollToBottom]);
   useEffect(() => {
     console.log(conversationId);
     (async () => {
@@ -285,8 +296,16 @@ const ChatArea: React.FC<ChatAreaProps> = ({
             </div>
           </div>
         ))}
+        <div ref={messagesEndRef} />
       </div>
-
+      {showScrollButton && (
+        <div className="flex gap-2 mx-auto cursor-pointer">
+          <button onClick={scrollToBottom} className="scroll-to-bottom-button">
+            Scroll to Bottom
+          </button>
+          <ChevronDownIcon />
+        </div>
+      )}
       <div className="border-t p-4 flex">
         <input
           type="text"
