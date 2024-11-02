@@ -299,10 +299,11 @@ const ChatArea: React.FC<ChatAreaProps> = ({
         <div ref={messagesEndRef} />
       </div>
       {showScrollButton && (
-        <div className="flex gap-2 mx-auto cursor-pointer">
-          <button onClick={scrollToBottom} className="scroll-to-bottom-button">
-            Scroll to Bottom
-          </button>
+        <div
+          onClick={scrollToBottom}
+          className="flex gap-2 mx-auto cursor-pointer"
+        >
+          <button className="scroll-to-bottom-button">Scroll to Bottom</button>
           <ChevronDownIcon />
         </div>
       )}
