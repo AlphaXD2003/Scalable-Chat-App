@@ -20,6 +20,12 @@ interface PeerContextType {
   setRemoteStream: any;
   localStream: any;
   setLocalStream: any;
+  calling: any;
+  setCalling: any;
+  callAccepted: any;
+  setCallAccepted: any;
+  callGranted: any;
+  setCallGranted: any;
 }
 
 const PeerContext = React.createContext<PeerContextType | null>(null);
@@ -32,6 +38,9 @@ export const usePeerContext = () => {
   return context;
 };
 const PeerProvider = (props: Props) => {
+  const [calling, setCalling] = useState<boolean>(false);
+  const [callAccepted, setCallAccepted] = useState<boolean>(false);
+  const [callGranted, setCallGranted] = useState<boolean>(false);
   const peer = new RTCPeerConnection({
     iceServers: [
       {
@@ -134,6 +143,12 @@ const PeerProvider = (props: Props) => {
   return (
     <PeerContext.Provider
       value={{
+        callAccepted,
+        setCallAccepted,
+        setCallGranted,
+        setCalling,
+        callGranted,
+        calling,
         localStream,
         setLocalStream,
         setRemoteStream,

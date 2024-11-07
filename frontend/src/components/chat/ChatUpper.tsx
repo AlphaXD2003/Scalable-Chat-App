@@ -24,7 +24,6 @@ import { usePeerContext } from "@/context/PeerContext";
 
 interface Props {
   conversationId: string;
-  setCalling: any;
 }
 
 interface Conversation {
@@ -38,7 +37,7 @@ interface UserStatus {
   loading: boolean;
 }
 
-const ChatHeader = ({ conversationId, setCalling }: Props) => {
+const ChatHeader = ({ conversationId }: Props) => {
   console.log(conversationId);
   const [conversation, setConversation] = useState<Conversation | null | any>(
     null
@@ -114,7 +113,7 @@ const ChatHeader = ({ conversationId, setCalling }: Props) => {
   const [socket] = useSocket();
   const { user } = useUserContext();
   const roomName = `${user.username}-${conversationId}`;
-  const { setType } = usePeerContext();
+  const { setType, setCalling } = usePeerContext();
   const handleAudioCall = useCallback(async () => {
     console.log(conversationId);
     socket?.emit("outgoing:call", { from: user.username, to: conversationId });

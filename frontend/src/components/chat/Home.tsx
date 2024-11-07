@@ -111,9 +111,7 @@ interface IncomingOfflineGroupMessage {
 
 const Home: React.FC = () => {
   const [muted, setMuted] = useState<boolean>(true);
-  const [calling, setCalling] = useState<boolean>(false);
-  const [callAccepted, setCallAccepted] = useState<boolean>(false);
-  const [callGranted, setCallGranted] = useState<boolean>(false);
+
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [selectedConversation, setSelectedConversation] = useState<
     string | null
@@ -145,6 +143,12 @@ const Home: React.FC = () => {
     setRemoteStream,
     remoteStream,
     sendStream,
+    callAccepted,
+    setCallAccepted,
+    setCallGranted,
+    setCalling,
+    callGranted,
+    calling,
   } = usePeerContext();
 
   const handleMessageReceive = useCallback(async (data: IncomingMessage) => {
@@ -800,7 +804,6 @@ const Home: React.FC = () => {
               loadConverSationFromLocally={loadConverSationFromLocally}
               emitDeleteMessage={emitDeleteMessage}
               loadMessages={loadMessages}
-              setCalling={setCalling}
             />
           ) : newContactPage ? (
             <div>
