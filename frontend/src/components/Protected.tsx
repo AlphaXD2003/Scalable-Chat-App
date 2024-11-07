@@ -30,6 +30,31 @@ const Protected = () => {
         avatar: response.data.data.avatar,
       });
     } catch (error) {
+      try {
+        const response = await axios.post(
+          `${import.meta.env.VITE_BACKEND_URL}/user/userinfo`,
+          {},
+          {
+            withCredentials: true,
+          }
+        );
+
+        setUser({
+          username: response.data.data.username,
+          firstname: response.data.data.firstname,
+          lastname: response.data.data.lastname,
+          isVerified: response.data.data.isVerified,
+          isAdmin: response.data.data.isAdmin,
+          email: response.data.data.email,
+          id: response.data.data._id,
+          avatar: response.data.data.avatar,
+        });
+      } catch (error) {
+        navigate("/login");
+        toast({
+          title: "Error while getting the user details.",
+        });
+      }
       navigate("/login");
       toast({
         title: "Error while getting the user details.",

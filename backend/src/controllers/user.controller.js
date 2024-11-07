@@ -371,10 +371,11 @@ const getUserDetailsFromEmail = async (req, res) => {
 const getUserDetailsFromUsername = async (req, res) => {
   try {
     const { username } = req.body;
-    if (!username) throw new ApiErrors(401, "Email required to get info");
+    if (!username) throw new ApiErrors(401, "userame required to get info");
     const user = await User.findOne({ username }).select(
       "-password -refreshToken -isAdmin -isVerified"
     );
+    console.log(user);
     return res.status(201).json(new ApiResponse(201, "User Found", user));
   } catch (error) {
     return res

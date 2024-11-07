@@ -24,12 +24,19 @@ import {
   DeleteIcon,
   PlusCircle,
   Contact,
+  AudioLinesIcon,
+  AudioLines,
+  BellMinusIcon,
+  BellElectricIcon,
 } from "lucide-react";
 import CreateNewContact from "./CreateNewContact";
 import { useToast } from "@/hooks/use-toast";
 import { Toast, ToastProvider } from "../ui/toast";
 import Contacts from "../User/Contacts";
 import CreateNewGroup from "./CreateNewGroup";
+import { usePeerContext } from "@/context/PeerContext";
+import IncomingCallNotification from "../Call/CallCompnent";
+
 interface Conversation {
   id: string;
   name: string;
@@ -103,6 +110,10 @@ interface IncomingOfflineGroupMessage {
 }
 
 const Home: React.FC = () => {
+  const [muted, setMuted] = useState<boolean>(true);
+  const [calling, setCalling] = useState<boolean>(false);
+  const [callAccepted, setCallAccepted] = useState<boolean>(false);
+  const [callGranted, setCallGranted] = useState<boolean>(false);
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [selectedConversation, setSelectedConversation] = useState<
     string | null
@@ -121,6 +132,21 @@ const Home: React.FC = () => {
   useEffect(() => {
     selectedConversationRef.current = selectedConversation;
   }, [selectedConversation]);
+
+  const {
+    type,
+    incomingCall,
+    setIncomingCall,
+    createCall,
+    createAnswer,
+    peer,
+    localStream,
+    setLocalStream,
+    setRemoteStream,
+    remoteStream,
+    sendStream,
+  } = usePeerContext();
+
   const handleMessageReceive = useCallback(async (data: IncomingMessage) => {
     console.log("123", selectedConversation);
     console.log(data);
@@ -394,6 +420,28 @@ const Home: React.FC = () => {
 
   const { toast } = useToast();
 
+  const handleCallAccepted = useCallback(async (data: any) => {
+    console.log(data);
+    const offer = await createCall();
+    const roomId = `${user.username}-${data.calledId}`;
+    socket?.emit("signal:from", { ...data, offer, roomId });
+    socket?.emit("selfjoin", roomId);
+  }, []);
+
+  const handleAnswerGen = useCallback(async (data: any) => {
+    console.log(data);
+    const { roomId, calledId, callerId, offer } = data;
+    const answer = await createAnswer(offer);
+    socket?.emit("selfjoin", roomId);
+    socket?.emit("send:answer:from", { ...data, answer });
+  }, []);
+
+  const handleAnsRec = useCallback(async (data: any) => {
+    console.log(data);
+    await peer?.setRemoteDescription(new RTCSessionDescription(data.answer));
+    setCallAccepted(true);
+  }, []);
+
   useEffect(() => {
     if (socket) {
       console.log("onning events");
@@ -403,6 +451,9 @@ const Home: React.FC = () => {
       socket.on("groupmessage:offline", handleOfflineGroupMessage);
       socket.on("delete_msg_online", handleDeleteMessage);
       socket.on("delete_msg_offline", handleOfflineDeleteMessage);
+      socket.on("call:accepted:by", handleCallAccepted);
+      socket.on("signal:to", handleAnswerGen);
+      socket.on("receivedAnswer", handleAnsRec);
     }
 
     return () => {
@@ -414,27 +465,32 @@ const Home: React.FC = () => {
         socket.off("groupmessage:offline", handleOfflineGroupMessage);
         socket.off("delete_msg_online", handleDeleteMessage);
         socket.off("delete_msg_offline", handleOfflineDeleteMessage);
+        socket.off("call:accepted:by", handleCallAccepted);
+        socket.off("signal:to", handleAnswerGen);
+        socket.off("receivedAnswer", handleAnsRec);
       }
     };
   }, [socket]);
 
-  // const loadMessages = useCallback(async (cid: string) => {
-  //   try {
-  //     console.log("loadM", cid);
-  //     const data = await messageService.loadMessages(cid);
-  //     console.log("ddata", data);
-  //     const transformedMessages: Message[] = data.map((msg) => ({
-  //       id: msg.id,
-  //       sender: msg.sender,
-  //       text: msg.text,
-  //       timestamp: new Date(msg.timestamp),
-  //     }));
-  //     console.log("transformedMessages,", transformedMessages);
-  //     setMessages((prev) => {
-  //       return transformedMessages;
-  //     });
-  //   } catch (error) {}
-  // }, []);
+  const [dataSelectedCov, setDataSelectedConv] = useState<any>(null);
+  const loadSelectedConRefData = useCallback(async () => {
+    try {
+      const response = await axios.post(
+        `${import.meta.env.VITE_BACKEND_URL}/user/usernamedetails`,
+        {
+          username: selectedConversationRef.current,
+        },
+        { withCredentials: true }
+      );
+      setDataSelectedConv(response.data.data);
+    } catch (error) {}
+  }, [selectedConversationRef.current]);
+
+  useEffect(() => {
+    if (selectedConversationRef.current) {
+      (async () => await loadSelectedConRefData())();
+    }
+  }, [selectedConversationRef.current]);
 
   const loadMessages = useCallback(async (cid: string) => {
     try {
@@ -556,12 +612,43 @@ const Home: React.FC = () => {
     setConversations(data);
   };
 
+  const onDecline = () => {
+    setIncomingCall(false);
+  };
+  const [incomingCallId, setIncomingCallId] = useState<string>("");
+  const [incomingCallIdAvatar, setIncomingCallIdAvatar] = useState<string>("");
+  const onAccept = (data?: any) => {
+    console.log("1");
+    setCallGranted(true);
+    const { callerName, avatar } = data;
+    if (data) {
+      setIncomingCallId(callerName);
+      setIncomingCallIdAvatar(avatar);
+    }
+  };
+
   const emitDeleteMessage = async (
     messageId: string,
     conversationId: string
   ) => {
     socket?.emit("delete_message", { messageId, name: conversationId });
   };
+
+  const handleLocalStream = useCallback(async () => {
+    const stream = await navigator.mediaDevices.getUserMedia({
+      audio: true,
+      video: type === "video",
+    });
+    setLocalStream(stream);
+  }, [peer, calling, callAccepted]);
+
+  useEffect(() => {
+    if (calling || callAccepted) {
+      handleLocalStream();
+    }
+  }, [peer, calling]);
+
+  useEffect(() => {});
 
   useEffect(() => {
     (async () => {
@@ -595,6 +682,7 @@ const Home: React.FC = () => {
                     className="text-gray-300 cursor-pointer"
                   />
                 </PopoverButton>
+
                 <PopoverPanel
                   transition
                   anchor="bottom"
@@ -632,6 +720,20 @@ const Home: React.FC = () => {
                 size={24}
                 className="text-gray-300 cursor-pointer"
               />
+
+              {muted ? (
+                <BellMinusIcon
+                  onClick={() => setMuted(false)}
+                  size={24}
+                  className="text-gray-300 cursor-pointer"
+                />
+              ) : (
+                <BellElectricIcon
+                  onClick={() => setMuted(true)}
+                  size={24}
+                  className="text-gray-300 cursor-pointer"
+                />
+              )}
               <MoreVertical
                 size={24}
                 className="text-gray-300 cursor-pointer"
@@ -698,6 +800,7 @@ const Home: React.FC = () => {
               loadConverSationFromLocally={loadConverSationFromLocally}
               emitDeleteMessage={emitDeleteMessage}
               loadMessages={loadMessages}
+              setCalling={setCalling}
             />
           ) : newContactPage ? (
             <div>
@@ -731,6 +834,16 @@ const Home: React.FC = () => {
           />
           <CreateNewGroup open={newGroup} setOpen={setNewGroup} toast={toast} />
         </div>
+
+        {incomingCall && (
+          <IncomingCallNotification
+            muted={muted}
+            onDecline={onDecline}
+            setIncomingCall={setIncomingCall}
+            onAccept={onAccept}
+            setCallGranted={setCallGranted}
+          />
+        )}
       </div>
     );
 };

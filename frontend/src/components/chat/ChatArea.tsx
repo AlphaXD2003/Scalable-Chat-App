@@ -34,6 +34,7 @@ interface ChatAreaProps {
   emitDeleteMessage: any;
   sendDelete: any;
   loadMessages: any;
+  setCalling: any;
 }
 
 const ChatArea: React.FC<ChatAreaProps> = ({
@@ -45,6 +46,7 @@ const ChatArea: React.FC<ChatAreaProps> = ({
   emitDeleteMessage,
   sendDelete,
   loadMessages,
+  setCalling,
 }) => {
   const [inputText, setInputText] = useState("");
 
@@ -217,7 +219,7 @@ const ChatArea: React.FC<ChatAreaProps> = ({
       className="flex flex-col h-full "
     >
       <div>
-        <ChatHeader conversationId={conversationId} />
+        <ChatHeader conversationId={conversationId} setCalling={setCalling} />
       </div>
       <div className="flex-grow overflow-y-auto p-4 space-y-4 ">
         <div className="absolute flex w-full opacity-40 text-white">

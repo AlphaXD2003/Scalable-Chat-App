@@ -8,7 +8,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { conversationService } from "@/services/conversationService";
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useState, useRef, useCallback } from "react";
 import {
   Dialog,
   DialogContent,
@@ -18,9 +18,13 @@ import {
 import ChatInfoView from "./ViewContact";
 import { DialogDescription } from "@radix-ui/react-dialog";
 import axios from "axios";
+import { useSocket } from "@/context/SocketContext";
+import { useUserContext } from "@/context/UserContext";
+import { usePeerContext } from "@/context/PeerContext";
 
 interface Props {
   conversationId: string;
+  setCalling: any;
 }
 
 interface Conversation {
@@ -34,7 +38,7 @@ interface UserStatus {
   loading: boolean;
 }
 
-const ChatHeader = ({ conversationId }: Props) => {
+const ChatHeader = ({ conversationId, setCalling }: Props) => {
   console.log(conversationId);
   const [conversation, setConversation] = useState<Conversation | null | any>(
     null
@@ -52,7 +56,7 @@ const ChatHeader = ({ conversationId }: Props) => {
   // Use ref to store the interval ID
   const statusIntervalRef = useRef<NodeJS.Timeout | null>(null);
 
-  const fetchConversation = async () => {
+  const fetchConversation = useCallback(async () => {
     try {
       const conv = await conversationService.getConversation(conversationId);
       console.log(conv);
@@ -62,9 +66,9 @@ const ChatHeader = ({ conversationId }: Props) => {
     } catch (error) {
       console.error("Failed to fetch conversation:", error);
     }
-  };
+  }, [conversationId]);
 
-  const fetchUserStatus = async () => {
+  const fetchUserStatus = useCallback(async () => {
     // If already fetching, skip this request
     if (isFetchingStatus.current) return;
 
@@ -92,9 +96,9 @@ const ChatHeader = ({ conversationId }: Props) => {
     } finally {
       isFetchingStatus.current = false;
     }
-  };
+  }, [conversationId]);
 
-  const checkUserOrGroup = async () => {
+  const checkUserOrGroup = useCallback(async () => {
     try {
       const response = await axios.post(
         `${import.meta.env.VITE_BACKEND_URL}/user/checkuserorgroup`,
@@ -105,14 +109,30 @@ const ChatHeader = ({ conversationId }: Props) => {
     } catch (error) {
       console.error("Failed to check user/group status:", error);
     }
-  };
+  }, [conversationId]);
 
+  const [socket] = useSocket();
+  const { user } = useUserContext();
+  const roomName = `${user.username}-${conversationId}`;
+  const { setType } = usePeerContext();
+  const handleAudioCall = useCallback(async () => {
+    console.log(conversationId);
+    socket?.emit("outgoing:call", { from: user.username, to: conversationId });
+    setCalling(true);
+    setType("audio");
+  }, [conversationId]);
+  const handleVideoCall = useCallback(async () => {
+    console.log("1");
+    socket?.emit("outgoing:call", { from: user.username, to: conversationId });
+    setCalling(true);
+    setType("video");
+  }, [conversationId]);
+
+  const initialize = useCallback(async () => {
+    await Promise.all([checkUserOrGroup(), fetchConversation()]);
+  }, [conversationId]);
   // Setup initial data
   useEffect(() => {
-    const initialize = async () => {
-      await Promise.all([checkUserOrGroup(), fetchConversation()]);
-    };
-
     initialize();
 
     // Cleanup function
@@ -181,7 +201,7 @@ const ChatHeader = ({ conversationId }: Props) => {
           size="icon"
           className="h-9 w-9 hover:bg-gray-800"
         >
-          <Video className="h-5 w-5 text-gray-300" />
+          <Video onClick={handleVideoCall} className="h-5 w-5 text-gray-300" />
         </Button>
 
         <Button
@@ -189,7 +209,7 @@ const ChatHeader = ({ conversationId }: Props) => {
           size="icon"
           className="h-9 w-9 hover:bg-gray-800"
         >
-          <Phone className="h-5 w-5 text-gray-300" />
+          <Phone onClick={handleAudioCall} className="h-5 w-5 text-gray-300" />
         </Button>
 
         <DropdownMenu>

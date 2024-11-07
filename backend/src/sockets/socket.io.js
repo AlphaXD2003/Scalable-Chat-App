@@ -7,12 +7,18 @@ const { ChatMessageModel } = require("../models/message.model");
 const User = require("../models/user.models");
 const { GroupInfo } = require("../models/groupsInfo.models");
 const { DeleteMessage } = require("../models/deleteMessages.model");
+const { activeCalls } = require("../config/activeCallMap.config");
 class Socket {
   constructor(WebServer) {
     this.messages = { isSubscribed: false };
     this.groupmessages = { isSubscribed: false };
     this.delete_message = { isSubscribed: false };
     this.joinGroup = { isSubscribed: false };
+    this.outGoingCall = { isSubscribed: false };
+    this.acceptedCall = { isSubscribed: false };
+    this.signalFrom = { isSubscribed: false };
+    this.receivedAnswer = { isSubscribed: false };
+
     this.socketio = new Server(WebServer, {
       cors: {
         origin: ["http://localhost:5173", "http://192.168.0.104:5173"],
@@ -228,7 +234,39 @@ class Socket {
         });
         this.joinGroup.isSubscribed = true;
       }
+      if (!this.outGoingCall.isSubscribed) {
+        await redis.subscribeChannel("outGoingCall", async (data) => {
+          const adata = JSON.parse(data);
+          const { from, to } = adata;
+          this.socketio.to(to).emit("incomming:call", { from });
+        });
+        this.outGoingCall.isSubscribed = true;
+      }
+      if (!this.acceptedCall.isSubscribed) {
+        await redis.subscribeChannel("acceptedCall", async (data) => {
+          const adata = JSON.parse(data);
+          const { calledId, callerId } = adata;
+          this.socketio.to(callerId).emit("call:accepted:by", adata);
+        });
+        this.acceptedCall.isSubscribed = true;
+      }
 
+      if (!this.signalFrom.isSubscribed) {
+        await redis.subscribeChannel("signalFrom", async (data) => {
+          const adata = JSON.parse(data);
+          console.log(adata);
+          const { calledId, callerId, offer } = adata;
+          socket.to(calledId).emit("signal:to", adata);
+        });
+        this.signalFrom.isSubscribed = true;
+      }
+      if (!this.receivedAnswer.isSubscribed) {
+        await redis.subscribeChannel("receivedAnswer", async (data) => {
+          const adata = JSON.parse(data);
+          this.socketio.to(adata.callerId).emit("receivedAnswer", adata);
+        });
+        this.receivedAnswer.isSubscribed = true;
+      }
       console.log(`New Socket connected: ${socket.id}`);
       const username = socket.handshake.query.username;
       try {
@@ -423,6 +461,14 @@ class Socket {
         socket.join(data);
       });
 
+      socket.on("signal:from", async (data) => {
+        console.log(data);
+        await redis.publishMessage({
+          channel: "signalFrom",
+          message: JSON.stringify(data),
+        });
+      });
+
       socket.on("group_message_send", async (data) => {
         const uid = data.mid;
         console.log(data);
@@ -464,6 +510,30 @@ class Socket {
             groupname: data.groupname,
             users: adata,
           }),
+        });
+      });
+
+      socket.on("outgoing:call", async (data) => {
+        console.log("data: ", data);
+        await redis.publishMessage({
+          channel: "outGoingCall",
+          message: JSON.stringify(data),
+        });
+      });
+
+      socket.on("call:accepted", async (data) => {
+        console.log("data: ", data);
+        await redis.publishMessage({
+          channel: "acceptedCall",
+          message: JSON.stringify(data),
+        });
+      });
+
+      socket.on("send:answer:from", async (data) => {
+        console.log(data);
+        await redis.publishMessage({
+          channel: "receivedAnswer",
+          message: JSON.stringify(data),
         });
       });
 

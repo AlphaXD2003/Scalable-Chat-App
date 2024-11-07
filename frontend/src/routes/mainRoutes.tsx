@@ -1,5 +1,6 @@
 import App from "@/App";
 import Protected from "@/components/Protected";
+import PeerProvider from "@/context/PeerContext";
 import SocketProvider from "@/context/SocketContext";
 import NotFound from "@/pages/404";
 import LoginPage from "@/pages/LoginPage";
@@ -29,7 +30,9 @@ const routes: SingleRoute[] = [
     path: "/",
     element: (
       <SocketProvider>
-        <Protected />
+        <PeerProvider>
+          <Protected />
+        </PeerProvider>
       </SocketProvider>
     ),
     children: [
